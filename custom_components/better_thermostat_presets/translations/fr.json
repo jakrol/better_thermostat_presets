@@ -1,0 +1,31 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Better Thermostat Presets",
+        "description": "Crée automatiquement des sélecteurs de préréglages pour Better Thermostat.",
+        "data": {
+          "excluded_presets": "Préréglages exclus",
+          "entity_id_suffix": "Suffixe de l'identifiant d'entité",
+          "name_suffix": "Suffixe du nom affiché"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "L'intégration est déjà configurée."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Paramètres",
+        "description": "Configurez les sélecteurs de préréglages.",
+        "data": {
+          "excluded_presets": "Préréglages exclus",
+          "entity_id_suffix": "Suffixe de l'identifiant d'entité",
+          "name_suffix": "Suffixe du nom affiché"
+        }
+      }
+    }
+  }
+}

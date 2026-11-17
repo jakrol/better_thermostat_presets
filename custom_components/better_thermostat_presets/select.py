@@ -1,0 +1,164 @@
+import re
+
+from homeassistant.components.select import SelectEntity
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+
+from .const import (
+    DEFAULT_EXCLUDED_PRESETS,
+    DEFAULT_ENTITY_ID_SUFFIX,
+    DEFAULT_NAME_SUFFIX,
+    CONF_EXCLUDED_PRESETS,
+    CONF_ENTITY_ID_SUFFIX,
+    CONF_NAME_SUFFIX,
+)
+
+
+def slugify(value: str) -> str:
+    """Convert a string into a valid entity ID component."""
+
+    value = value.lower()
+    value = re.sub(r"[^a-z0-9_]+", "_", value)
+    return value.strip("_")
+
+
+def get_source_entities(hass):
+    """Find climate entities provided by Better Thermostat."""
+
+    registry = er.async_get(hass)
+
+    return [
+        entity
+        for entity in registry.entities.values()
+        if entity.platform == "better_thermostat"
+        and entity.domain == "climate"
+        and entity.disabled_by is None
+    ]
+
+
+class BetterThermostatPresetSelect(SelectEntity):
+    """Represent a Better Thermostat preset selector."""
+
+    _attr_has_entity_name = False
+    _attr_icon = "mdi:thermostat"
+
+    def __init__(
+        self,
+        source_entity_id,
+        source_unique_id,
+        source_name,
+        excluded_presets,
+        entity_id_suffix,
+        name_suffix,
+    ):
+        self.source_entity_id = source_entity_id
+        self.excluded_presets = excluded_presets
+
+        self._attr_unique_id = (
+            f"{source_unique_id}_{slugify(entity_id_suffix)}"
+        )
+
+        self._attr_name = f"{source_name}: {name_suffix}"
+
+    @property
+    def available(self):
+        """Return source availability."""
+
+        state = self.hass.states.get(self.source_entity_id)
+
+        return (
+            state is not None
+            and state.state not in ("unavailable", "unknown")
+        )
+
+    @property
+    def current_option(self):
+        """Return the currently selected preset."""
+
+        state = self.hass.states.get(self.source_entity_id)
+
+        if state is None:
+            return None
+
+        return state.attributes.get("preset_mode")
+
+    @property
+    def options(self):
+        """Return available presets."""
+
+        state = self.hass.states.get(self.source_entity_id)
+
+        if state is None:
+            return []
+
+        presets = state.attributes.get("preset_modes", [])
+
+        return [
+            preset
+            for preset in presets
+            if preset.lower() not in self.excluded_presets
+        ]
+
+    async def async_select_option(self, option):
+        """Set a Better Thermostat preset."""
+
+        if option not in self.options:
+            return
+
+        await self.hass.services.async_call(
+            "climate",
+            "set_preset_mode",
+            {
+                "entity_id": self.source_entity_id,
+                "preset_mode": option,
+            },
+            blocking=True,
+        )
+
+        self.async_write_ha_state()
+
+
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+):
+    """Set up Better Thermostat preset selectors."""
+
+    excluded = {
+        item.lower()
+        for item in entry.data.get(
+            CONF_EXCLUDED_PRESETS,
+            DEFAULT_EXCLUDED_PRESETS,
+        )
+    }
+
+    entity_suffix = entry.data.get(
+        CONF_ENTITY_ID_SUFFIX,
+        DEFAULT_ENTITY_ID_SUFFIX,
+    )
+
+    name_suffix = entry.data.get(
+        CONF_NAME_SUFFIX,
+        DEFAULT_NAME_SUFFIX,
+    )
+
+    sources = get_source_entities(hass)
+
+    entities = []
+
+    for source in sources:
+        entity = BetterThermostatPresetSelect(
+            source.entity_id,
+            source.unique_id,
+            source.name or source.original_name or source.entity_id,
+            excluded,
+            entity_suffix,
+            name_suffix,
+        )
+
+        entities.append(entity)
+
+    async_add_entities(entities)

@@ -1,0 +1,31 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Better Thermostat Presets",
+        "description": "Erstellt automatisch Preset-Auswahlen für Better Thermostat.",
+        "data": {
+          "excluded_presets": "Auszuschließende Presets",
+          "entity_id_suffix": "Zusatz für Entity-IDs",
+          "name_suffix": "Zusatz für Anzeigenamen"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Die Integration ist bereits eingerichtet."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Einstellungen",
+        "description": "Passe die Preset-Auswahl an.",
+        "data": {
+          "excluded_presets": "Auszuschließende Presets",
+          "entity_id_suffix": "Zusatz für Entity-IDs",
+          "name_suffix": "Zusatz für Anzeigenamen"
+        }
+      }
+    }
+  }
+}
