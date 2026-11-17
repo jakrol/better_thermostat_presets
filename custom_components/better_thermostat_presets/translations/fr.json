@@ -3,13 +3,14 @@
     "step": {
       "user": {
         "title": "Better Thermostat Presets",
-        "description": "Crée automatiquement des sélecteurs de préréglages pour Better Thermostat.",
+        "description": "Sélecteurs de préréglages pour Better Thermostat. Prefix : ajouter un suffixe fixe. Regex : réécrire le nom avec un motif.",
         "data": {
           "excluded_presets": "Préréglages exclus",
-          "entity_id_suffix": "Suffixe de l'identifiant d'entité",
-          "name_suffix": "Suffixe du nom affiché",
-          "name_pattern": "Regex du nom affiché",
-          "name_replacement": "Remplacement du nom affiché"
+          "entity_id_suffix": "Suffixe de l'entité",
+          "name_mode": "Mode de nommage",
+          "name_suffix": "Suffixe",
+          "name_pattern": "Motif regex",
+          "name_replacement": "Remplacement"
         }
       }
     },
@@ -21,13 +22,14 @@
     "step": {
       "init": {
         "title": "Paramètres",
-        "description": "Configurez les sélecteurs de préréglages.",
+        "description": "Choisissez comment le nom du sélecteur est généré : Prefix ajoute un suffixe fixe, Regex le remplace avec un motif.",
         "data": {
           "excluded_presets": "Préréglages exclus",
-          "entity_id_suffix": "Suffixe de l'identifiant d'entité",
-          "name_suffix": "Suffixe du nom affiché",
-          "name_pattern": "Regex du nom affiché",
-          "name_replacement": "Remplacement du nom affiché"
+          "entity_id_suffix": "Suffixe de l'entité",
+          "name_mode": "Mode de nommage",
+          "name_suffix": "Suffixe",
+          "name_pattern": "Motif regex",
+          "name_replacement": "Remplacement"
         }
       }
     }

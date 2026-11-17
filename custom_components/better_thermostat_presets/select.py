@@ -9,12 +9,16 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .const import (
     DEFAULT_EXCLUDED_PRESETS,
     DEFAULT_ENTITY_ID_SUFFIX,
+    DEFAULT_NAME_MODE,
     DEFAULT_NAME_SUFFIX,
     DEFAULT_NAME_PATTERN,
     DEFAULT_NAME_REPLACEMENT,
+    NAME_MODE_PREFIX,
+    NAME_MODE_REGEX,
     CONF_EXCLUDED_PRESETS,
     CONF_ENTITY_ID_SUFFIX,
     CONF_NAME_SUFFIX,
+    CONF_NAME_MODE,
     CONF_NAME_PATTERN,
     CONF_NAME_REPLACEMENT,
 )
@@ -33,14 +37,15 @@ def build_friendly_name(
     name_suffix,
     name_pattern="",
     name_replacement="",
+    name_mode=DEFAULT_NAME_MODE,
 ):
     """Build the selector display name from the thermostat's friendly name."""
 
     source_name = (source_name or "").strip()
     if not source_name:
-        return name_suffix.strip()
+        return (name_suffix or "").strip()
 
-    if name_pattern:
+    if name_mode == NAME_MODE_REGEX and name_pattern:
         try:
             replacement = name_replacement or r"\g<0>"
             result = re.sub(name_pattern, replacement, source_name)
@@ -85,6 +90,7 @@ class BetterThermostatPresetSelect(SelectEntity):
         name_suffix,
         name_pattern="",
         name_replacement="",
+        name_mode=DEFAULT_NAME_MODE,
     ):
         self.source_entity_id = source_entity_id
         self.excluded_presets = excluded_presets
@@ -98,6 +104,7 @@ class BetterThermostatPresetSelect(SelectEntity):
             name_suffix,
             name_pattern,
             name_replacement,
+            name_mode,
         )
 
     @property
@@ -183,6 +190,11 @@ async def async_setup_entry(
         DEFAULT_NAME_SUFFIX,
     )
 
+    name_mode = entry.data.get(
+        CONF_NAME_MODE,
+        DEFAULT_NAME_MODE,
+    )
+
     name_pattern = entry.data.get(
         CONF_NAME_PATTERN,
         DEFAULT_NAME_PATTERN,
@@ -207,6 +219,7 @@ async def async_setup_entry(
             name_suffix,
             name_pattern,
             name_replacement,
+            name_mode,
         )
 
         entities.append(entity)

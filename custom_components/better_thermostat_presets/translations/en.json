@@ -3,13 +3,14 @@
     "step": {
       "user": {
         "title": "Better Thermostat Presets",
-        "description": "Automatically create preset selectors for Better Thermostat.",
+        "description": "Preset selectors for Better Thermostat. Prefix: append a fixed suffix. Regex: rewrite the name with a pattern.",
         "data": {
           "excluded_presets": "Excluded presets",
           "entity_id_suffix": "Entity ID suffix",
-          "name_suffix": "Display name suffix",
-          "name_pattern": "Friendly name regex",
-          "name_replacement": "Friendly name replacement"
+          "name_mode": "Name mode",
+          "name_suffix": "Suffix",
+          "name_pattern": "Regex pattern",
+          "name_replacement": "Replacement"
         }
       }
     },
@@ -21,13 +22,14 @@
     "step": {
       "init": {
         "title": "Settings",
-        "description": "Configure preset selectors.",
+        "description": "Choose how the selector name is generated: Prefix adds a fixed suffix, Regex replaces it with a pattern.",
         "data": {
           "excluded_presets": "Excluded presets",
           "entity_id_suffix": "Entity ID suffix",
-          "name_suffix": "Display name suffix",
-          "name_pattern": "Friendly name regex",
-          "name_replacement": "Friendly name replacement"
+          "name_mode": "Name mode",
+          "name_suffix": "Suffix",
+          "name_pattern": "Regex pattern",
+          "name_replacement": "Replacement"
         }
       }
     }

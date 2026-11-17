@@ -3,13 +3,14 @@
     "step": {
       "user": {
         "title": "Better Thermostat Presets",
-        "description": "Erstellt automatisch Preset-Auswahlen für Better Thermostat.",
+        "description": "Preset-Auswahlen für Better Thermostat. Prefix: festen Zusatz anhängen. Regex: Namen mit Muster neu schreiben.",
         "data": {
           "excluded_presets": "Auszuschließende Presets",
           "entity_id_suffix": "Zusatz für Entity-IDs",
-          "name_suffix": "Zusatz für Anzeigenamen",
-          "name_pattern": "Regex für Anzeigenamen",
-          "name_replacement": "Ersetzung für Anzeigenamen"
+          "name_mode": "Namensmodus",
+          "name_suffix": "Zusatz",
+          "name_pattern": "Regex-Muster",
+          "name_replacement": "Ersetzung"
         }
       }
     },
@@ -21,13 +22,14 @@
     "step": {
       "init": {
         "title": "Einstellungen",
-        "description": "Passe die Preset-Auswahl an.",
+        "description": "Wähle, wie der Name erzeugt wird: Prefix hängt einen festen Zusatz an, Regex ersetzt ihn mit einem Muster.",
         "data": {
           "excluded_presets": "Auszuschließende Presets",
           "entity_id_suffix": "Zusatz für Entity-IDs",
-          "name_suffix": "Zusatz für Anzeigenamen",
-          "name_pattern": "Regex für Anzeigenamen",
-          "name_replacement": "Ersetzung für Anzeigenamen"
+          "name_mode": "Namensmodus",
+          "name_suffix": "Zusatz",
+          "name_pattern": "Regex-Muster",
+          "name_replacement": "Ersetzung"
         }
       }
     }

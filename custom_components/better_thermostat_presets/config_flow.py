@@ -7,12 +7,16 @@ from .const import (
     DOMAIN,
     DEFAULT_EXCLUDED_PRESETS,
     DEFAULT_ENTITY_ID_SUFFIX,
+    DEFAULT_NAME_MODE,
     DEFAULT_NAME_SUFFIX,
     DEFAULT_NAME_PATTERN,
     DEFAULT_NAME_REPLACEMENT,
+    NAME_MODE_PREFIX,
+    NAME_MODE_REGEX,
     CONF_EXCLUDED_PRESETS,
     CONF_ENTITY_ID_SUFFIX,
     CONF_NAME_SUFFIX,
+    CONF_NAME_MODE,
     CONF_NAME_PATTERN,
     CONF_NAME_REPLACEMENT,
 )
@@ -21,7 +25,8 @@ from .const import (
 def get_schema(defaults):
     """Build the configuration schema."""
 
-    return vol.Schema({
+    mode = defaults.get(CONF_NAME_MODE, DEFAULT_NAME_MODE)
+    fields = {
         vol.Required(
             CONF_EXCLUDED_PRESETS,
             default=", ".join(
@@ -33,21 +38,34 @@ def get_schema(defaults):
             default=defaults[CONF_ENTITY_ID_SUFFIX],
         ): str,
         vol.Required(
-            CONF_NAME_SUFFIX,
-            default=defaults[CONF_NAME_SUFFIX],
-        ): str,
-        vol.Optional(
-            CONF_NAME_PATTERN,
-            default=defaults.get(CONF_NAME_PATTERN, DEFAULT_NAME_PATTERN),
-        ): str,
-        vol.Optional(
-            CONF_NAME_REPLACEMENT,
-            default=defaults.get(
+            CONF_NAME_MODE,
+            default=mode,
+        ): vol.In([NAME_MODE_PREFIX, NAME_MODE_REGEX]),
+    }
+
+    if mode == NAME_MODE_REGEX:
+        fields.update({
+            vol.Optional(
+                CONF_NAME_PATTERN,
+                default=defaults.get(CONF_NAME_PATTERN, DEFAULT_NAME_PATTERN),
+            ): str,
+            vol.Optional(
                 CONF_NAME_REPLACEMENT,
-                DEFAULT_NAME_REPLACEMENT,
-            ),
-        ): str,
-    })
+                default=defaults.get(
+                    CONF_NAME_REPLACEMENT,
+                    DEFAULT_NAME_REPLACEMENT,
+                ),
+            ): str,
+        })
+    else:
+        fields.update({
+            vol.Optional(
+                CONF_NAME_SUFFIX,
+                default=defaults[CONF_NAME_SUFFIX],
+            ): str,
+        })
+
+    return vol.Schema(fields)
 
 
 def parse_options(user_input):
@@ -59,14 +77,13 @@ def parse_options(user_input):
         if item.strip()
     ]
 
-    return {
+    mode = user_input.get(CONF_NAME_MODE, DEFAULT_NAME_MODE)
+    parsed = {
         CONF_EXCLUDED_PRESETS: excluded,
         CONF_ENTITY_ID_SUFFIX: user_input[
             CONF_ENTITY_ID_SUFFIX
         ].strip(),
-        CONF_NAME_SUFFIX: user_input[
-            CONF_NAME_SUFFIX
-        ].strip(),
+        CONF_NAME_MODE: mode,
         CONF_NAME_PATTERN: str(
             user_input.get(CONF_NAME_PATTERN, DEFAULT_NAME_PATTERN)
         ).strip(),
@@ -74,6 +91,19 @@ def parse_options(user_input):
             user_input.get(CONF_NAME_REPLACEMENT, DEFAULT_NAME_REPLACEMENT)
         ).strip(),
     }
+
+    if mode == NAME_MODE_REGEX:
+        parsed[CONF_NAME_SUFFIX] = user_input.get(
+            CONF_NAME_SUFFIX,
+            DEFAULT_NAME_SUFFIX,
+        ).strip()
+    else:
+        parsed[CONF_NAME_SUFFIX] = user_input.get(
+            CONF_NAME_SUFFIX,
+            DEFAULT_NAME_SUFFIX,
+        ).strip()
+
+    return parsed
 
 
 class BetterThermostatPresetsConfigFlow(
@@ -93,6 +123,7 @@ class BetterThermostatPresetsConfigFlow(
         defaults = {
             CONF_EXCLUDED_PRESETS: DEFAULT_EXCLUDED_PRESETS,
             CONF_ENTITY_ID_SUFFIX: DEFAULT_ENTITY_ID_SUFFIX,
+            CONF_NAME_MODE: DEFAULT_NAME_MODE,
             CONF_NAME_SUFFIX: DEFAULT_NAME_SUFFIX,
             CONF_NAME_PATTERN: DEFAULT_NAME_PATTERN,
             CONF_NAME_REPLACEMENT: DEFAULT_NAME_REPLACEMENT,
@@ -136,6 +167,10 @@ class BetterThermostatPresetsOptionsFlow(
             CONF_ENTITY_ID_SUFFIX: self.config_entry.data.get(
                 CONF_ENTITY_ID_SUFFIX,
                 DEFAULT_ENTITY_ID_SUFFIX,
+            ),
+            CONF_NAME_MODE: self.config_entry.data.get(
+                CONF_NAME_MODE,
+                DEFAULT_NAME_MODE,
             ),
             CONF_NAME_SUFFIX: self.config_entry.data.get(
                 CONF_NAME_SUFFIX,

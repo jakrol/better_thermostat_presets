@@ -184,6 +184,7 @@ class BetterThermostatPresetLogicTests(unittest.TestCase):
             name_suffix="Heizpreset",
             name_pattern=r"^(.*)$",
             name_replacement=r"\1: Nachtmodus",
+            name_mode="regex",
         )
 
         self.assertEqual(entity._attr_name, "Wohnzimmer: Nachtmodus")
