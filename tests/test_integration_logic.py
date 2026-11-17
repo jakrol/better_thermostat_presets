@@ -1,3 +1,4 @@
+import asyncio
 import importlib.util
 import sys
 import types
@@ -187,6 +188,131 @@ class BetterThermostatPresetLogicTests(unittest.TestCase):
         self.assertTrue(entity.available)
         self.assertEqual(entity.current_option, "eco")
         self.assertEqual(entity.options, ["eco"])
+
+    def test_get_source_entities_only_returns_valid_better_thermostat_climate_entries(self):
+        valid = types.SimpleNamespace(
+            entity_id="climate.living_room",
+            platform="better_thermostat",
+            domain="climate",
+            disabled_by=None,
+            name="Wohnzimmer",
+            unique_id="living-room",
+        )
+        invalid_disabled = types.SimpleNamespace(
+            entity_id="climate.disabled",
+            platform="better_thermostat",
+            domain="climate",
+            disabled_by="user",
+            name="Disabled",
+            unique_id="disabled",
+        )
+        invalid_platform = types.SimpleNamespace(
+            entity_id="sensor.temp",
+            platform="mqtt",
+            domain="sensor",
+            disabled_by=None,
+            name="Temp",
+            unique_id="sensor-temp",
+        )
+        invalid_domain = types.SimpleNamespace(
+            entity_id="climate.other",
+            platform="better_thermostat",
+            domain="switch",
+            disabled_by=None,
+            name="Other",
+            unique_id="other",
+        )
+
+        fake_registry = types.SimpleNamespace(
+            entities={
+                "climate.living_room": valid,
+                "climate.disabled": invalid_disabled,
+                "sensor.temp": invalid_platform,
+                "climate.other": invalid_domain,
+            }
+        )
+        self.select_module.er.async_get = lambda hass: fake_registry
+
+        result = self.select_module.get_source_entities({})
+
+        self.assertEqual(result, [valid])
+
+    def test_async_setup_entry_creates_select_entities_for_matching_sources(self):
+        source = types.SimpleNamespace(
+            entity_id="climate.living_room",
+            unique_id="abc123",
+            name="Wohnzimmer",
+            original_name="Wohnzimmer",
+            platform="better_thermostat",
+            domain="climate",
+            disabled_by=None,
+        )
+        fake_registry = types.SimpleNamespace(entities={source.entity_id: source})
+        self.select_module.er.async_get = lambda hass: fake_registry
+
+        entry = types.SimpleNamespace(
+            data={
+                self.const.CONF_EXCLUDED_PRESETS: ["boost", "none"],
+                self.const.CONF_ENTITY_ID_SUFFIX: "heizpreset",
+                self.const.CONF_NAME_SUFFIX: "Heizpreset",
+            }
+        )
+        added = []
+
+        asyncio.run(
+            self.select_module.async_setup_entry(
+                hass={},
+                entry=entry,
+                async_add_entities=lambda entities: added.extend(entities),
+            )
+        )
+
+        self.assertEqual(len(added), 1)
+        self.assertEqual(added[0].source_entity_id, "climate.living_room")
+        self.assertEqual(added[0]._attr_name, "Wohnzimmer: Heizpreset")
+
+    def test_async_select_option_ignores_invalid_values_and_calls_service_for_valid_ones(self):
+        source_state = types.SimpleNamespace(
+            state="heat",
+            attributes={
+                "preset_mode": "eco",
+                "preset_modes": ["eco", "boost", "none"],
+            },
+        )
+        entity = self.select_module.BetterThermostatPresetSelect(
+            source_entity_id="climate.room",
+            source_unique_id="abc123",
+            source_name="Wohnzimmer",
+            excluded_presets={"boost", "none"},
+            entity_id_suffix="heizpreset",
+            name_suffix="Heizpreset",
+        )
+        calls = []
+
+        async def fake_async_call(domain, service, data, blocking=True):
+            calls.append((domain, service, data, blocking))
+
+        entity.hass = types.SimpleNamespace(
+            states={"climate.room": source_state},
+            services=types.SimpleNamespace(async_call=fake_async_call),
+        )
+        entity.async_write_ha_state = lambda: None
+
+        asyncio.run(entity.async_select_option("away"))
+        self.assertEqual(calls, [])
+
+        asyncio.run(entity.async_select_option("eco"))
+        self.assertEqual(
+            calls,
+            [
+                (
+                    "climate",
+                    "set_preset_mode",
+                    {"entity_id": "climate.room", "preset_mode": "eco"},
+                    True,
+                )
+            ],
+        )
 
     def test_config_flow_uses_default_values_in_form(self):
         flow = self.flow_module.BetterThermostatPresetsConfigFlow()
