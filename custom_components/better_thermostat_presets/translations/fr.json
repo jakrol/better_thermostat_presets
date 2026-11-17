@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Better Thermostat Presets",
-        "description": "Sélecteurs de préréglages pour Better Thermostat. Prefix : ajouter un suffixe fixe. Regex : réécrire le nom avec un motif.",
+        "description": "Configurez les noms et les exclusions des sélecteurs.",
         "data": {
           "excluded_presets": "Préréglages exclus",
           "entity_id_suffix": "Suffixe de l'entité",
@@ -11,6 +11,14 @@
           "name_suffix": "Suffixe",
           "name_pattern": "Motif regex",
           "name_replacement": "Remplacement"
+        },
+        "data_description": {
+          "excluded_presets": "Préréglages séparés par des virgules qui ne doivent pas apparaître comme options.",
+          "entity_id_suffix": "Suffixe ajouté à l'ID d'entité généré.",
+          "name_mode": "Choisissez un seul mode : Prefix ajoute un suffixe fixe, Regex réécrit le nom avec un motif.",
+          "name_suffix": "Texte fixe ajouté au nom du thermostat, par exemple : Heizpreset.",
+          "name_pattern": "Syntaxe regex, par exemple ^(.+)$ ou .*\\((.+)\\).* . Le motif s'applique au nom d'origine.",
+          "name_replacement": "Texte de remplacement. Vous pouvez utiliser des références arrière comme \\1 ou \\g<0>."
         }
       }
     },
@@ -22,7 +30,7 @@
     "step": {
       "init": {
         "title": "Paramètres",
-        "description": "Choisissez comment le nom du sélecteur est généré : Prefix ajoute un suffixe fixe, Regex le remplace avec un motif.",
+        "description": "Ajustez le comportement des préréglages et du nommage.",
         "data": {
           "excluded_presets": "Préréglages exclus",
           "entity_id_suffix": "Suffixe de l'entité",
@@ -30,6 +38,14 @@
           "name_suffix": "Suffixe",
           "name_pattern": "Motif regex",
           "name_replacement": "Remplacement"
+        },
+        "data_description": {
+          "excluded_presets": "Préréglages séparés par des virgules qui ne doivent pas apparaître comme options.",
+          "entity_id_suffix": "Suffixe ajouté à l'ID d'entité généré.",
+          "name_mode": "Choisissez un seul mode : Prefix ajoute un suffixe fixe, Regex réécrit le nom avec un motif.",
+          "name_suffix": "Texte fixe ajouté au nom du thermostat, par exemple : Heizpreset.",
+          "name_pattern": "Syntaxe regex, par exemple ^(.+)$ ou .*\\((.+)\\).* . Le motif s'applique au nom d'origine.",
+          "name_replacement": "Texte de remplacement. Vous pouvez utiliser des références arrière comme \\1 ou \\g<0>."
         }
       }
     }

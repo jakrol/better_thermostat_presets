@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Better Thermostat Presets",
-        "description": "Preset selectors for Better Thermostat. Prefix: append a fixed suffix. Regex: rewrite the name with a pattern.",
+        "description": "Configure the preset selector names and exclusions.",
         "data": {
           "excluded_presets": "Excluded presets",
           "entity_id_suffix": "Entity ID suffix",
@@ -11,6 +11,14 @@
           "name_suffix": "Suffix",
           "name_pattern": "Regex pattern",
           "name_replacement": "Replacement"
+        },
+        "data_description": {
+          "excluded_presets": "Comma-separated preset names that should not appear as options.",
+          "entity_id_suffix": "Suffix appended to the generated entity ID.",
+          "name_mode": "Choose only one mode: Prefix appends a fixed suffix, Regex rewrites the name using a pattern.",
+          "name_suffix": "Fixed text appended to the thermostat name, for example: Heizpreset.",
+          "name_pattern": "Regex syntax, for example ^(.+)$ or .*\\((.+)\\).* . The pattern is applied to the original name.",
+          "name_replacement": "Replacement text. You can use backreferences such as \\1 or \\g<0>."
         }
       }
     },
@@ -22,7 +30,7 @@
     "step": {
       "init": {
         "title": "Settings",
-        "description": "Choose how the selector name is generated: Prefix adds a fixed suffix, Regex replaces it with a pattern.",
+        "description": "Adjust preset and naming behavior.",
         "data": {
           "excluded_presets": "Excluded presets",
           "entity_id_suffix": "Entity ID suffix",
@@ -30,6 +38,14 @@
           "name_suffix": "Suffix",
           "name_pattern": "Regex pattern",
           "name_replacement": "Replacement"
+        },
+        "data_description": {
+          "excluded_presets": "Comma-separated preset names that should not appear as options.",
+          "entity_id_suffix": "Suffix appended to the generated entity ID.",
+          "name_mode": "Choose only one mode: Prefix appends a fixed suffix, Regex rewrites the name using a pattern.",
+          "name_suffix": "Fixed text appended to the thermostat name, for example: Heizpreset.",
+          "name_pattern": "Regex syntax, for example ^(.+)$ or .*\\((.+)\\).* . The pattern is applied to the original name.",
+          "name_replacement": "Replacement text. You can use backreferences such as \\1 or \\g<0>."
         }
       }
     }

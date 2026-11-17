@@ -133,8 +133,14 @@ def install_runtime_stubs():
             self.key = key
             self.default = default
 
+    class Optional:
+        def __init__(self, key, default=None):
+            self.key = key
+            self.default = default
+
     voluptuous.Schema = Schema
     voluptuous.Required = Required
+    voluptuous.Optional = Optional
     sys.modules["voluptuous"] = voluptuous
 
 
@@ -408,6 +414,17 @@ class BetterThermostatPresetLogicTests(unittest.TestCase):
                 )
             ],
         )
+
+    def test_config_flow_creates_default_entry_without_form(self):
+        flow = self.flow_module.BetterThermostatPresetsConfigFlow()
+
+        result = asyncio.run(flow.async_step_user())
+
+        self.assertEqual(result["type"], "create_entry")
+        self.assertEqual(result["title"], "Better Thermostat Presets")
+        self.assertEqual(result["data"][self.const.CONF_EXCLUDED_PRESETS], ["boost", "none"])
+        self.assertEqual(result["data"][self.const.CONF_ENTITY_ID_SUFFIX], "heizpreset")
+        self.assertEqual(result["data"][self.const.CONF_NAME_MODE], "prefix")
 
     def test_config_flow_uses_default_values_in_form(self):
         flow = self.flow_module.BetterThermostatPresetsConfigFlow()

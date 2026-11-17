@@ -161,6 +161,20 @@ def parse_options(user_input):
     return parsed
 
 
+def get_default_data():
+    """Return the default config entry data for a newly installed integration."""
+
+    return {
+        CONF_EXCLUDED_PRESETS: DEFAULT_EXCLUDED_PRESETS,
+        CONF_ENTITY_EXCLUDED_PRESETS: {},
+        CONF_ENTITY_ID_SUFFIX: DEFAULT_ENTITY_ID_SUFFIX,
+        CONF_NAME_MODE: DEFAULT_NAME_MODE,
+        CONF_NAME_SUFFIX: DEFAULT_NAME_SUFFIX,
+        CONF_NAME_PATTERN: DEFAULT_NAME_PATTERN,
+        CONF_NAME_REPLACEMENT: DEFAULT_NAME_REPLACEMENT,
+    }
+
+
 class BetterThermostatPresetsConfigFlow(
     config_entries.ConfigFlow,
     domain=DOMAIN,
@@ -170,30 +184,20 @@ class BetterThermostatPresetsConfigFlow(
     VERSION = 1
 
     async def async_step_user(self, user_input=None):
-        """Handle initial setup."""
+        """Handle initial setup using safe defaults so no manual setup is required."""
 
         await self.async_set_unique_id(DOMAIN)
         self._abort_if_unique_id_configured()
 
-        defaults = {
-            CONF_EXCLUDED_PRESETS: DEFAULT_EXCLUDED_PRESETS,
-            CONF_ENTITY_EXCLUDED_PRESETS: {},
-            CONF_ENTITY_ID_SUFFIX: DEFAULT_ENTITY_ID_SUFFIX,
-            CONF_NAME_MODE: DEFAULT_NAME_MODE,
-            CONF_NAME_SUFFIX: DEFAULT_NAME_SUFFIX,
-            CONF_NAME_PATTERN: DEFAULT_NAME_PATTERN,
-            CONF_NAME_REPLACEMENT: DEFAULT_NAME_REPLACEMENT,
-        }
-
+        defaults = get_default_data()
         if user_input is not None:
-            return self.async_create_entry(
-                title="Better Thermostat Presets",
-                data=parse_options(user_input),
-            )
+            entry_data = parse_options(user_input)
+        else:
+            entry_data = parse_options(defaults)
 
-        return self.async_show_form(
-            step_id="user",
-            data_schema=get_schema(defaults),
+        return self.async_create_entry(
+            title="Better Thermostat Presets",
+            data=entry_data,
         )
 
     @staticmethod

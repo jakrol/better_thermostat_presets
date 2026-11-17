@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Better Thermostat Presets",
-        "description": "Preset-Auswahlen für Better Thermostat. Prefix: festen Zusatz anhängen. Regex: Namen mit Muster neu schreiben.",
+        "description": "Konfiguriere die Namen und Presets der Selector-Entitäten.",
         "data": {
           "excluded_presets": "Auszuschließende Presets",
           "entity_id_suffix": "Zusatz für Entity-IDs",
@@ -11,6 +11,14 @@
           "name_suffix": "Zusatz",
           "name_pattern": "Regex-Muster",
           "name_replacement": "Ersetzung"
+        },
+        "data_description": {
+          "excluded_presets": "Kommagetrennte Presets, die nicht als Optionen erscheinen sollen.",
+          "entity_id_suffix": "Suffix, der an die erzeugte Entity-ID angehängt wird.",
+          "name_mode": "Wähle nur einen Modus: Prefix hängt einen festen Zusatz an, Regex ersetzt den Namen mit einem Muster.",
+          "name_suffix": "Fester Zusatz, zum Beispiel: Heizpreset.",
+          "name_pattern": "Regex-Syntax, z. B. ^(.+)$ oder .*\\((.+)\\).* . Das Muster wird auf den originalen Namen angewendet.",
+          "name_replacement": "Ersetzungstext. Du kannst Backreferences wie \\1 oder \\g<0> verwenden."
         }
       }
     },
@@ -22,7 +30,7 @@
     "step": {
       "init": {
         "title": "Einstellungen",
-        "description": "Wähle, wie der Name erzeugt wird: Prefix hängt einen festen Zusatz an, Regex ersetzt ihn mit einem Muster.",
+        "description": "Passe das Benennungs- und Preset-Verhalten an.",
         "data": {
           "excluded_presets": "Auszuschließende Presets",
           "entity_id_suffix": "Zusatz für Entity-IDs",
@@ -30,6 +38,14 @@
           "name_suffix": "Zusatz",
           "name_pattern": "Regex-Muster",
           "name_replacement": "Ersetzung"
+        },
+        "data_description": {
+          "excluded_presets": "Kommagetrennte Presets, die nicht als Optionen erscheinen sollen.",
+          "entity_id_suffix": "Suffix, der an die erzeugte Entity-ID angehängt wird.",
+          "name_mode": "Wähle nur einen Modus: Prefix hängt einen festen Zusatz an, Regex ersetzt den Namen mit einem Muster.",
+          "name_suffix": "Fester Zusatz, zum Beispiel: Heizpreset.",
+          "name_pattern": "Regex-Syntax, z. B. ^(.+)$ oder .*\\((.+)\\).* . Das Muster wird auf den originalen Namen angewendet.",
+          "name_replacement": "Ersetzungstext. Du kannst Backreferences wie \\1 oder \\g<0> verwenden."
         }
       }
     }
