@@ -134,6 +134,10 @@ class BetterThermostatPresetSelect(SelectEntity):
         self._attr_unique_id = (
             f"{source_unique_id}_{slugify(entity_id_suffix)}"
         )
+        source_object_id = source_entity_id.removeprefix("climate.")
+        self._suggested_object_id = slugify(
+            f"{source_object_id}_{entity_id_suffix}"
+        )
         self._attr_device_info = source_device_info
 
         self._attr_name = build_friendly_name(
@@ -143,6 +147,12 @@ class BetterThermostatPresetSelect(SelectEntity):
             name_replacement,
             name_mode,
         )
+
+    @property
+    def suggested_object_id(self):
+        """Return a slug for the selector without a source climate domain prefix."""
+
+        return self._suggested_object_id
 
     @property
     def available(self):
@@ -324,6 +334,21 @@ async def async_setup_entry(
             name_mode,
             source_device_info=source_device_info,
         )
+
+        registry = er.async_get(hass)
+        if hasattr(registry, "async_get_entity_id"):
+            existing_entity_id = registry.async_get_entity_id(
+                "select",
+                DOMAIN,
+                entity.unique_id,
+            )
+            legacy_entity_id = f"select.climate_{entity.suggested_object_id}"
+            if existing_entity_id == legacy_entity_id:
+                registry.async_update_entity(
+                    existing_entity_id,
+                    new_entity_id=f"select.{entity.suggested_object_id}",
+                )
+
         added_entity_ids.add(source.entity_id)
         return entity
 

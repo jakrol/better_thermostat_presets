@@ -24,6 +24,14 @@ def install_runtime_stubs():
         def __init__(self):
             self.hass = None
 
+        @property
+        def name(self):
+            return self._attr_name
+
+        @property
+        def unique_id(self):
+            return self._attr_unique_id
+
         async def async_added_to_hass(self):
             return None
 
@@ -341,6 +349,19 @@ class BetterThermostatPresetLogicTests(unittest.TestCase):
 
         self.assertEqual(entity._attr_name, "Wohnzimmer: Nachtmodus")
 
+    def test_select_entity_object_id_removes_climate_domain_from_name(self):
+        entity = self.select_module.BetterThermostatPresetSelect(
+            source_entity_id="climate.eg_bad_heizung",
+            source_unique_id="room-1",
+            source_name="EG: Bad Heizung",
+            excluded_presets=set(),
+            entity_id_suffix="heizpreset",
+            name_suffix="Heizpreset",
+        )
+
+        self.assertEqual(entity._attr_name, "EG: Bad Heizung: Heizpreset")
+        self.assertEqual(entity.suggested_object_id, "eg_bad_heizung_heizpreset")
+
     def test_source_state_friendly_name_is_used_instead_of_entity_id(self):
         source = types.SimpleNamespace(
             entity_id="climate.dg_schlafzimmer_heizung",
@@ -595,6 +616,64 @@ class BetterThermostatPresetLogicTests(unittest.TestCase):
         )
 
         self.assertEqual([entity.source_entity_id for entity in added], ["climate.room_2"])
+
+    def test_async_setup_entry_migrates_only_legacy_generated_entity_id(self):
+        source = types.SimpleNamespace(
+            entity_id="climate.eg_bad_heizung",
+            unique_id="room-1",
+            name="climate.eg_bad_heizung",
+            original_name="climate.eg_bad_heizung",
+            platform="better_thermostat",
+            domain="climate",
+            disabled_by=None,
+        )
+
+        class FakeRegistry:
+            def __init__(self):
+                self.entities = {source.entity_id: source}
+                self.updates = []
+                self.lookups = []
+
+            def async_get_entity_id(self, entity_domain, platform, unique_id):
+                self.lookups.append((entity_domain, platform, unique_id))
+                return "select.climate_eg_bad_heizung_heizpreset"
+
+            def async_update_entity(self, entity_id, **kwargs):
+                self.updates.append((entity_id, kwargs))
+
+        registry = FakeRegistry()
+        self.select_module.er.async_get = lambda hass: registry
+        entry = types.SimpleNamespace(
+            data={
+                self.const.CONF_AUTOCREATE: True,
+                self.const.CONF_ENTITY_ID_SUFFIX: "heizpreset",
+                self.const.CONF_NAME_SUFFIX: "Heizpreset",
+            },
+            async_on_unload=lambda callback: None,
+        )
+        hass = types.SimpleNamespace(
+            data={},
+            states=types.SimpleNamespace(get=lambda entity_id: None),
+        )
+
+        asyncio.run(
+            self.select_module.async_setup_entry(
+                hass=hass,
+                entry=entry,
+                async_add_entities=lambda entities: None,
+            )
+        )
+
+        self.assertEqual(registry.lookups, [("select", self.const.DOMAIN, "room-1_heizpreset")])
+        self.assertEqual(
+            registry.updates,
+            [
+                (
+                    "select.climate_eg_bad_heizung_heizpreset",
+                    {"new_entity_id": "select.eg_bad_heizung_heizpreset"},
+                )
+            ],
+        )
 
     def test_autocreate_adds_better_thermostats_that_appear_later(self):
         first = types.SimpleNamespace(
