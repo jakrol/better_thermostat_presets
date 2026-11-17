@@ -44,6 +44,8 @@ When a user selects a new preset, the integration calls the standard climate ser
 6. Open Settings > Devices & Services > Add Integration.
 7. Search for `Better Thermostat Presets` and add it.
 
+Home Assistant requires this one-time Add Integration step to create a config entry; HACS installation alone cannot load or configure an integration. The entry is created with defaults and does not ask for per-thermostat setup.
+
 ## Configuration
 
 | Option | Default |
@@ -54,6 +56,8 @@ When a user selects a new preset, the integration calls the standard climate ser
 | Name suffix | `Heizpreset` |
 | Regex pattern | empty |
 | Regex replacement | empty |
+
+Change these settings from the integration's **Configure** page after adding it. Global excluded presets apply to every selector. The Configure page also provides an individual excluded-presets field for each detected Better Thermostat; those exclusions are added to the global exclusions.
 
 In `prefix` mode, a fixed suffix is added to the Better Thermostat `friendly_name`, for example `Wohnzimmer: Heizpreset`.
 In `regex` mode, the name is rewritten with a custom regex pattern such as `^(.*)$` and a replacement like `\1: Nachtmodus`.

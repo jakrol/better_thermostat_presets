@@ -1,3 +1,4 @@
+import json
 import re
 
 from homeassistant.components.select import SelectEntity
@@ -175,44 +176,44 @@ async def async_setup_entry(
 ):
     """Set up Better Thermostat preset selectors."""
 
+    settings = entry.data | getattr(entry, "options", {})
     excluded = {
-        item.lower()
-        for item in entry.data.get(
+        str(item).strip().lower()
+        for item in settings.get(
             CONF_EXCLUDED_PRESETS,
             DEFAULT_EXCLUDED_PRESETS,
         )
+        if str(item).strip()
     }
 
-    entity_excluded = entry.data.get(CONF_ENTITY_EXCLUDED_PRESETS, {})
+    entity_excluded = settings.get(CONF_ENTITY_EXCLUDED_PRESETS, {})
     if isinstance(entity_excluded, str):
         try:
-            import json
-
             entity_excluded = json.loads(entity_excluded)
         except (TypeError, ValueError):
             entity_excluded = {}
 
-    entity_suffix = entry.data.get(
+    entity_suffix = settings.get(
         CONF_ENTITY_ID_SUFFIX,
         DEFAULT_ENTITY_ID_SUFFIX,
     )
 
-    name_suffix = entry.data.get(
+    name_suffix = settings.get(
         CONF_NAME_SUFFIX,
         DEFAULT_NAME_SUFFIX,
     )
 
-    name_mode = entry.data.get(
+    name_mode = settings.get(
         CONF_NAME_MODE,
         DEFAULT_NAME_MODE,
     )
 
-    name_pattern = entry.data.get(
+    name_pattern = settings.get(
         CONF_NAME_PATTERN,
         DEFAULT_NAME_PATTERN,
     )
 
-    name_replacement = entry.data.get(
+    name_replacement = settings.get(
         CONF_NAME_REPLACEMENT,
         DEFAULT_NAME_REPLACEMENT,
     )

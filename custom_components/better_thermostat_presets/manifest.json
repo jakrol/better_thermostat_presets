@@ -5,6 +5,7 @@
   "documentation": "https://github.com/jakrol/better_thermostat_presets",
   "issue_tracker": "https://github.com/jakrol/better_thermostat_presets/issues",
   "dependencies": [],
+  "after_dependencies": ["better_thermostat"],
   "codeowners": ["@jakrol"],
   "config_flow": true,
   "iot_class": "local_push"

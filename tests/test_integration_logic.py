@@ -65,9 +65,13 @@ def install_runtime_stubs():
         def async_create_entry(self, **kwargs):
             return {"type": "create_entry", **kwargs}
 
+    class OptionsFlowWithReload(OptionsFlow):
+        pass
+
     config_entries.ConfigEntry = ConfigEntry
     config_entries.ConfigFlow = ConfigFlow
     config_entries.OptionsFlow = OptionsFlow
+    config_entries.OptionsFlowWithReload = OptionsFlowWithReload
 
     core = types.ModuleType("homeassistant.core")
 
@@ -138,9 +142,14 @@ def install_runtime_stubs():
             self.key = key
             self.default = default
 
+    class In:
+        def __init__(self, values):
+            self.values = values
+
     voluptuous.Schema = Schema
     voluptuous.Required = Required
     voluptuous.Optional = Optional
+    voluptuous.In = In
     sys.modules["voluptuous"] = voluptuous
 
 
@@ -203,6 +212,23 @@ class BetterThermostatPresetLogicTests(unittest.TestCase):
         self.assertEqual(
             parsed["entity_excluded_presets"],
             {"climate.living_room": ["eco"], "climate.kitchen": ["away", "boost"]},
+        )
+
+    def test_parse_options_reads_entity_fields_from_configure_form(self):
+        field = "Excluded presets for Living Room [climate.living_room]"
+        parsed = self.flow_module.parse_options(
+            {
+                self.const.CONF_EXCLUDED_PRESETS: "boost, none",
+                self.const.CONF_ENTITY_ID_SUFFIX: "heizpreset",
+                self.const.CONF_NAME_SUFFIX: "Heizpreset",
+                field: " away, eco ",
+            },
+            {field: "climate.living_room"},
+        )
+
+        self.assertEqual(
+            parsed[self.const.CONF_ENTITY_EXCLUDED_PRESETS],
+            {"climate.living_room": ["away", "eco"]},
         )
 
     def test_select_entity_uses_regex_pattern_for_friendly_name(self):
@@ -372,6 +398,50 @@ class BetterThermostatPresetLogicTests(unittest.TestCase):
 
         self.assertEqual(added[0].excluded_presets, {"none", "boost", "eco"})
 
+    def test_async_setup_entry_prefers_configure_options_to_entry_defaults(self):
+        source = types.SimpleNamespace(
+            entity_id="climate.living_room",
+            unique_id="abc123",
+            name="Living Room",
+            original_name="Living Room",
+            platform="better_thermostat",
+            domain="climate",
+            disabled_by=None,
+        )
+        self.select_module.er.async_get = lambda hass: types.SimpleNamespace(
+            entities={source.entity_id: source}
+        )
+        entry = types.SimpleNamespace(
+            data={
+                self.const.CONF_EXCLUDED_PRESETS: ["boost"],
+                self.const.CONF_ENTITY_ID_SUFFIX: "heizpreset",
+                self.const.CONF_NAME_SUFFIX: "Heizpreset",
+            },
+            options={
+                self.const.CONF_EXCLUDED_PRESETS: ["none"],
+            },
+        )
+        source_state = types.SimpleNamespace(
+            state="heat",
+            attributes={"preset_mode": "eco", "preset_modes": ["eco", "boost", "none"]},
+        )
+        hass = types.SimpleNamespace(
+            states=types.SimpleNamespace(get=lambda entity_id: source_state),
+        )
+        added = []
+
+        asyncio.run(
+            self.select_module.async_setup_entry(
+                hass=hass,
+                entry=entry,
+                async_add_entities=lambda entities: added.extend(entities),
+            )
+        )
+
+        self.assertEqual(added[0].excluded_presets, {"none"})
+        added[0].hass = hass
+        self.assertEqual(added[0].options, ["eco", "boost"])
+
     def test_async_select_option_ignores_invalid_values_and_calls_service_for_valid_ones(self):
         source_state = types.SimpleNamespace(
             state="heat",
@@ -426,28 +496,41 @@ class BetterThermostatPresetLogicTests(unittest.TestCase):
         self.assertEqual(result["data"][self.const.CONF_ENTITY_ID_SUFFIX], "heizpreset")
         self.assertEqual(result["data"][self.const.CONF_NAME_MODE], "prefix")
 
-    def test_config_flow_uses_default_values_in_form(self):
-        flow = self.flow_module.BetterThermostatPresetsConfigFlow()
-        result = flow.async_show_form(step_id="user", data_schema=None)
-
-        self.assertEqual(result["type"], "form")
-        self.assertEqual(result["step_id"], "user")
-
-    def test_options_flow_uses_existing_entry_data(self):
+    def test_options_flow_uses_existing_entry_data_and_entity_fields(self):
         config_entry = types.SimpleNamespace(
             data={
                 self.const.CONF_EXCLUDED_PRESETS: ["boost", "none"],
                 self.const.CONF_ENTITY_ID_SUFFIX: "heizpreset",
                 self.const.CONF_NAME_SUFFIX: "Heizpreset",
-            }
+            },
+            options={},
+        )
+        source = types.SimpleNamespace(
+            entity_id="climate.living_room",
+            platform="better_thermostat",
+            domain="climate",
+            disabled_by=None,
+            name="Living Room",
+            original_name="Living Room",
+        )
+        self.flow_module.er.async_get = lambda hass: types.SimpleNamespace(
+            entities={source.entity_id: source}
         )
 
-        flow = self.flow_module.BetterThermostatPresetsOptionsFlow(config_entry)
-        self.assertIs(flow.config_entry, config_entry)
-        result = flow.async_show_form(step_id="init", data_schema=None)
+        flow = self.flow_module.BetterThermostatPresetsOptionsFlow()
+        flow._config_entry = config_entry
+        flow.hass = {}
+        result = asyncio.run(flow.async_step_init())
 
         self.assertEqual(result["type"], "form")
         self.assertEqual(result["step_id"], "init")
+        schema_fields = result["data_schema"].args[0]
+        field_names = [field.key for field in schema_fields]
+        self.assertIn(
+            "Excluded presets for Living Room [climate.living_room]",
+            field_names,
+        )
+        self.assertNotIn(self.const.CONF_ENTITY_EXCLUDED_PRESETS, field_names)
 
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Better Thermostat Presets",
-        "description": "Konfiguriere die Namen und Presets der Selector-Entitäten.",
+        "description": "Die Integration wird mit Standardwerten hinzugefügt. Benennung und Preset-Ausschlüsse können später auf der Konfigurationsseite der Integration geändert werden.",
         "data": {
           "excluded_presets": "Auszuschließende Presets",
           "entity_id_suffix": "Zusatz für Entity-IDs",
@@ -30,7 +30,7 @@
     "step": {
       "init": {
         "title": "Einstellungen",
-        "description": "Passe das Benennungs- und Preset-Verhalten an.",
+        "description": "Lege gemeinsame Benennungs- und Ausschlussregeln fest. Für jedes gefundene Better Thermostat wird ein zusätzliches Feld für individuelle Ausschlüsse angezeigt.",
         "data": {
           "excluded_presets": "Auszuschließende Presets",
           "entity_id_suffix": "Zusatz für Entity-IDs",

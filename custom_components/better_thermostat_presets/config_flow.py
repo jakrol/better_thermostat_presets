@@ -4,6 +4,7 @@ import voluptuous as vol
 
 from homeassistant import config_entries
 from homeassistant.core import callback
+from homeassistant.helpers import entity_registry as er
 
 from .const import (
     DOMAIN,
@@ -23,6 +24,8 @@ from .const import (
     CONF_NAME_PATTERN,
     CONF_NAME_REPLACEMENT,
 )
+
+ENTITY_EXCLUSIONS_FIELD_PREFIX = "Excluded presets for "
 
 
 def _normalize_excluded_presets(value):
@@ -67,8 +70,28 @@ def _normalize_entity_excluded_presets(value):
     return normalized
 
 
-def get_schema(defaults):
-    """Build the configuration schema."""
+def get_entity_exclusion_fields(hass):
+    """Map readable options fields to Better Thermostat entity IDs."""
+
+    registry = er.async_get(hass)
+    fields = {}
+    for entity in registry.entities.values():
+        if (
+            entity.platform != "better_thermostat"
+            or entity.domain != "climate"
+            or entity.disabled_by is not None
+        ):
+            continue
+
+        name = entity.name or entity.original_name or entity.entity_id
+        field = f"{ENTITY_EXCLUSIONS_FIELD_PREFIX}{name} [{entity.entity_id}]"
+        fields[field] = entity.entity_id
+
+    return fields
+
+
+def get_schema(defaults, entity_fields=None):
+    """Build the integration options schema."""
 
     mode = defaults.get(CONF_NAME_MODE, DEFAULT_NAME_MODE)
     fields = {
@@ -76,14 +99,6 @@ def get_schema(defaults):
             CONF_EXCLUDED_PRESETS,
             default=", ".join(
                 defaults[CONF_EXCLUDED_PRESETS]
-            ),
-        ): str,
-        vol.Optional(
-            CONF_ENTITY_EXCLUDED_PRESETS,
-            default=json.dumps(
-                defaults.get(CONF_ENTITY_EXCLUDED_PRESETS, {}),
-                ensure_ascii=False,
-                sort_keys=True,
             ),
         ): str,
         vol.Required(
@@ -95,6 +110,13 @@ def get_schema(defaults):
             default=mode,
         ): vol.In([NAME_MODE_PREFIX, NAME_MODE_REGEX]),
     }
+
+    entity_excluded = defaults.get(CONF_ENTITY_EXCLUDED_PRESETS, {})
+    for field, entity_id in (entity_fields or {}).items():
+        fields[vol.Optional(
+            field,
+            default=", ".join(entity_excluded.get(entity_id, [])),
+        )] = str
 
     if mode == NAME_MODE_REGEX:
         fields.update({
@@ -121,7 +143,7 @@ def get_schema(defaults):
     return vol.Schema(fields)
 
 
-def parse_options(user_input):
+def parse_options(user_input, entity_fields=None):
     """Normalize configuration options."""
 
     excluded = _normalize_excluded_presets(
@@ -130,6 +152,13 @@ def parse_options(user_input):
     entity_excluded = _normalize_entity_excluded_presets(
         user_input.get(CONF_ENTITY_EXCLUDED_PRESETS, {})
     )
+    for field, entity_id in (entity_fields or {}).items():
+        if field in user_input:
+            presets = _normalize_excluded_presets(user_input[field])
+            if presets:
+                entity_excluded[entity_id] = presets
+            else:
+                entity_excluded.pop(entity_id, None)
 
     mode = user_input.get(CONF_NAME_MODE, DEFAULT_NAME_MODE)
     parsed = {
@@ -184,20 +213,14 @@ class BetterThermostatPresetsConfigFlow(
     VERSION = 1
 
     async def async_step_user(self, user_input=None):
-        """Handle initial setup using safe defaults so no manual setup is required."""
+        """Create the integration entry using defaults."""
 
         await self.async_set_unique_id(DOMAIN)
         self._abort_if_unique_id_configured()
 
-        defaults = get_default_data()
-        if user_input is not None:
-            entry_data = parse_options(user_input)
-        else:
-            entry_data = parse_options(defaults)
-
         return self.async_create_entry(
             title="Better Thermostat Presets",
-            data=entry_data,
+            data=get_default_data(),
         )
 
     @staticmethod
@@ -205,58 +228,45 @@ class BetterThermostatPresetsConfigFlow(
     def async_get_options_flow(config_entry):
         """Return the options flow."""
 
-        return BetterThermostatPresetsOptionsFlow(config_entry)
+        return BetterThermostatPresetsOptionsFlow()
 
 
 class BetterThermostatPresetsOptionsFlow(
-    config_entries.OptionsFlow,
+    config_entries.OptionsFlowWithReload,
 ):
     """Handle integration options."""
-
-    def __init__(self, config_entry):
-        self._config_entry = config_entry
 
     async def async_step_init(self, user_input=None):
         """Manage integration options."""
 
-        current = {
-            CONF_EXCLUDED_PRESETS: self.config_entry.data.get(
-                CONF_EXCLUDED_PRESETS,
-                DEFAULT_EXCLUDED_PRESETS,
-            ),
-            CONF_ENTITY_EXCLUDED_PRESETS: self.config_entry.data.get(
-                CONF_ENTITY_EXCLUDED_PRESETS,
-                {},
-            ),
-            CONF_ENTITY_ID_SUFFIX: self.config_entry.data.get(
-                CONF_ENTITY_ID_SUFFIX,
-                DEFAULT_ENTITY_ID_SUFFIX,
-            ),
-            CONF_NAME_MODE: self.config_entry.data.get(
-                CONF_NAME_MODE,
-                DEFAULT_NAME_MODE,
-            ),
-            CONF_NAME_SUFFIX: self.config_entry.data.get(
-                CONF_NAME_SUFFIX,
-                DEFAULT_NAME_SUFFIX,
-            ),
-            CONF_NAME_PATTERN: self.config_entry.data.get(
-                CONF_NAME_PATTERN,
-                DEFAULT_NAME_PATTERN,
-            ),
-            CONF_NAME_REPLACEMENT: self.config_entry.data.get(
-                CONF_NAME_REPLACEMENT,
-                DEFAULT_NAME_REPLACEMENT,
-            ),
-        }
+        current = get_default_data()
+        current.update(self.config_entry.data)
+        current.update(self.config_entry.options)
+        current[CONF_EXCLUDED_PRESETS] = _normalize_excluded_presets(
+            current.get(CONF_EXCLUDED_PRESETS)
+        )
+        current[CONF_ENTITY_EXCLUDED_PRESETS] = (
+            _normalize_entity_excluded_presets(
+                current.get(CONF_ENTITY_EXCLUDED_PRESETS)
+            )
+        )
+        entity_fields = get_entity_exclusion_fields(self.hass)
 
         if user_input is not None:
+            user_input = dict(user_input)
+            entity_ids_in_form = set(entity_fields.values())
+            user_input[CONF_ENTITY_EXCLUDED_PRESETS] = {
+                entity_id: presets
+                for entity_id, presets in current[
+                    CONF_ENTITY_EXCLUDED_PRESETS
+                ].items()
+                if entity_id not in entity_ids_in_form
+            }
             return self.async_create_entry(
-                title="",
-                data=parse_options(user_input),
+                data=parse_options(user_input, entity_fields),
             )
 
         return self.async_show_form(
             step_id="init",
-            data_schema=get_schema(current),
+            data_schema=get_schema(current, entity_fields),
         )

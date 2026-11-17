@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Better Thermostat Presets",
-        "description": "Configurez les noms et les exclusions des sélecteurs.",
+        "description": "L'intégration est ajoutée avec les valeurs par défaut. Modifiez ensuite le nommage et les exclusions depuis la page de configuration de l'intégration.",
         "data": {
           "excluded_presets": "Préréglages exclus",
           "entity_id_suffix": "Suffixe de l'entité",
@@ -30,7 +30,7 @@
     "step": {
       "init": {
         "title": "Paramètres",
-        "description": "Ajustez le comportement des préréglages et du nommage.",
+        "description": "Définissez les règles communes de nommage et d'exclusion. Un champ d'exclusion individuel apparaît pour chaque Better Thermostat détecté.",
         "data": {
           "excluded_presets": "Préréglages exclus",
           "entity_id_suffix": "Suffixe de l'entité",

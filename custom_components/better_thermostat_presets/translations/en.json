@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Better Thermostat Presets",
-        "description": "Configure the preset selector names and exclusions.",
+        "description": "The integration is added with defaults. Change naming and preset exclusions later from the integration's Configure page.",
         "data": {
           "excluded_presets": "Excluded presets",
           "entity_id_suffix": "Entity ID suffix",
@@ -30,7 +30,7 @@
     "step": {
       "init": {
         "title": "Settings",
-        "description": "Adjust preset and naming behavior.",
+        "description": "Set shared naming and exclusion defaults. Additional exclusion fields are shown for each detected Better Thermostat.",
         "data": {
           "excluded_presets": "Excluded presets",
           "entity_id_suffix": "Entity ID suffix",
