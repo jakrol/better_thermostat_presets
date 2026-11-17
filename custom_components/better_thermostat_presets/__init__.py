@@ -1,3 +1,5 @@
+# Initial project scaffold created with ChatGPT.
+# Subsequent implementation and refinements were authored by GitHub Copilot.
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 

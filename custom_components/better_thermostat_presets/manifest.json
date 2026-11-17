@@ -2,9 +2,10 @@
   "domain": "better_thermostat_presets",
   "name": "Better Thermostat Presets",
   "version": "1.0.0",
-  "documentation": "https://github.com/",
+  "documentation": "https://github.com/jakrol/better_thermostat_presets",
+  "issue_tracker": "https://github.com/jakrol/better_thermostat_presets/issues",
   "dependencies": [],
-  "codeowners": [],
+  "codeowners": ["@jakrol"],
   "config_flow": true,
   "iot_class": "local_push"
 }
