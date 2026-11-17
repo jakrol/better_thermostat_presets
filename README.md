@@ -56,18 +56,18 @@ Home Assistant requires this one-time Add Integration step to create a config en
 | Option | Default |
 |---|---|
 | Excluded presets | `boost, none` |
-| Entity ID suffix | `heizpreset` |
+| Entity ID suffix | `heating_preset` |
 | Name mode | `suffix` |
-| Name suffix | `Heizpreset` |
+| Name suffix | `heating preset` |
 | Regex pattern | empty |
 | Regex replacement | empty |
-| Autocreate | enabled |
+| Autocreate | disabled |
 
-Change these settings from the integration's **Configure** page after adding it. Global excluded presets apply to every selector. When Autocreate is disabled, use **Existing Better Thermostats** on this page to choose which current thermostats should receive selector entities. When enabled, all current and future Better Thermostats receive entities.
+Change these settings from the integration's **Configure** page after adding it. Global excluded presets apply to every selector. By default, use **Existing Better Thermostats** on this page to choose which current thermostats should receive selector entities. Enable Autocreate to include all current and future Better Thermostats automatically.
 
 Each thermostat device page includes an **Excluded presets** text control. Enter comma-separated preset names there; they are excluded in addition to the global defaults and restored after a restart.
 
-In `suffix` mode, a fixed suffix is added to the Better Thermostat `friendly_name`, for example `Wohnzimmer: Heizpreset`.
+In `suffix` mode, a fixed suffix is added to the Better Thermostat `friendly_name`, for example `Living Room: heating preset`.
 In `regex` mode, the name is rewritten with a custom regex pattern such as `^(.*)$` and a replacement like `\1: Nachtmodus`.
 
 ## Project structure

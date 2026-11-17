@@ -1,12 +1,14 @@
 DOMAIN = "better_thermostat_presets"
 
 DEFAULT_EXCLUDED_PRESETS = ["boost", "none"]
-DEFAULT_ENTITY_ID_SUFFIX = "heizpreset"
-DEFAULT_NAME_SUFFIX = "Heizpreset"
+DEFAULT_ENTITY_ID_SUFFIX = "heating_preset"
+LEGACY_DEFAULT_ENTITY_ID_SUFFIX = "heizpreset"
+DEFAULT_NAME_SUFFIX = "heating preset"
+LEGACY_DEFAULT_NAME_SUFFIX = "Heizpreset"
 DEFAULT_NAME_MODE = "suffix"
 DEFAULT_NAME_PATTERN = ""
 DEFAULT_NAME_REPLACEMENT = ""
-DEFAULT_AUTOCREATE = True
+DEFAULT_AUTOCREATE = False
 
 CONF_EXCLUDED_PRESETS = "excluded_presets"
 CONF_ENTITY_EXCLUDED_PRESETS = "entity_excluded_presets"

@@ -275,13 +275,23 @@ def load_package_modules():
     select = load_module(f"{package_name}.select", PACKAGE_DIR / "select.py")
     text = load_module(f"{package_name}.text", PACKAGE_DIR / "text.py")
     flow = load_module(f"{package_name}.config_flow", PACKAGE_DIR / "config_flow.py")
+    integration = load_module(
+        f"{package_name}.integration",
+        PACKAGE_DIR / "__init__.py",
+    )
 
-    return const, select, text, flow
+    return const, select, text, flow, integration
 
 
 class BetterThermostatPresetLogicTests(unittest.TestCase):
     def setUp(self):
-        self.const, self.select_module, self.text_module, self.flow_module = load_package_modules()
+        (
+            self.const,
+            self.select_module,
+            self.text_module,
+            self.flow_module,
+            self.integration_module,
+        ) = load_package_modules()
 
     def test_slugify_replaces_invalid_chars(self):
         self.assertEqual(self.select_module.slugify("My Preset!"), "my_preset")
@@ -291,14 +301,14 @@ class BetterThermostatPresetLogicTests(unittest.TestCase):
     def test_parse_options_normalizes_excluded_presets_and_strings(self):
         parsed = self.flow_module.parse_options({
             self.const.CONF_EXCLUDED_PRESETS: " boost, none, eco ",
-            self.const.CONF_ENTITY_ID_SUFFIX: "  Heizpreset  ",
+            self.const.CONF_ENTITY_ID_SUFFIX: "  heating_preset  ",
             self.const.CONF_NAME_SUFFIX: "  Heizpreset  ",
             self.const.CONF_NAME_PATTERN: "^(.+)$",
             self.const.CONF_NAME_REPLACEMENT: "\\1: Heizpreset",
         })
 
         self.assertEqual(parsed["excluded_presets"], ["boost", "none", "eco"])
-        self.assertEqual(parsed["entity_id_suffix"], "Heizpreset")
+        self.assertEqual(parsed["entity_id_suffix"], "heating_preset")
         self.assertEqual(parsed["name_suffix"], "Heizpreset")
         self.assertEqual(parsed["name_pattern"], "^(.+)$")
         self.assertEqual(parsed["name_replacement"], "\\1: Heizpreset")
@@ -307,7 +317,7 @@ class BetterThermostatPresetLogicTests(unittest.TestCase):
         parsed = self.flow_module.parse_options({
             self.const.CONF_EXCLUDED_PRESETS: "boost, none",
             self.const.CONF_ENTITY_EXCLUDED_PRESETS: '{"climate.living_room": ["eco"], "climate.kitchen": "away, boost"}',
-            self.const.CONF_ENTITY_ID_SUFFIX: "heizpreset",
+            self.const.CONF_ENTITY_ID_SUFFIX: "heating_preset",
             self.const.CONF_NAME_SUFFIX: "Heizpreset",
         })
 
@@ -321,7 +331,7 @@ class BetterThermostatPresetLogicTests(unittest.TestCase):
         parsed = self.flow_module.parse_options(
             {
                 self.const.CONF_EXCLUDED_PRESETS: "boost, none",
-                self.const.CONF_ENTITY_ID_SUFFIX: "heizpreset",
+                self.const.CONF_ENTITY_ID_SUFFIX: "heating_preset",
                 self.const.CONF_NAME_MODE: "suffix",
                 self.const.CONF_AUTOCREATE: False,
                 self.const.CONF_SELECTED_ENTITIES: ["climate.living_room"],
@@ -340,7 +350,7 @@ class BetterThermostatPresetLogicTests(unittest.TestCase):
             source_unique_id="abc123",
             source_name="Wohnzimmer",
             excluded_presets={"boost", "none"},
-            entity_id_suffix="heizpreset",
+            entity_id_suffix="heating_preset",
             name_suffix="Heizpreset",
             name_pattern=r"^(.*)$",
             name_replacement=r"\1: Nachtmodus",
@@ -355,12 +365,12 @@ class BetterThermostatPresetLogicTests(unittest.TestCase):
             source_unique_id="room-1",
             source_name="EG: Bad Heizung",
             excluded_presets=set(),
-            entity_id_suffix="heizpreset",
+            entity_id_suffix="heating_preset",
             name_suffix="Heizpreset",
         )
 
         self.assertEqual(entity._attr_name, "EG: Bad Heizung: Heizpreset")
-        self.assertEqual(entity.suggested_object_id, "eg_bad_heizung_heizpreset")
+        self.assertEqual(entity.suggested_object_id, "eg_bad_heizung_heating_preset")
 
     def test_source_state_friendly_name_is_used_instead_of_entity_id(self):
         source = types.SimpleNamespace(
@@ -395,7 +405,7 @@ class BetterThermostatPresetLogicTests(unittest.TestCase):
             source_unique_id="abc123",
             source_name="Wohnzimmer",
             excluded_presets={"boost", "none"},
-            entity_id_suffix="heizpreset",
+            entity_id_suffix="heating_preset",
             name_suffix="Heizpreset",
         )
         entity.hass = types.SimpleNamespace(states={"climate.room": source_state})
@@ -411,7 +421,7 @@ class BetterThermostatPresetLogicTests(unittest.TestCase):
             source_unique_id="abc123",
             source_name="Wohnzimmer",
             excluded_presets={"boost", "none"},
-            entity_id_suffix="heizpreset",
+            entity_id_suffix="heating_preset",
             name_suffix="Heizpreset",
             source_device_info=device_info,
         )
@@ -481,8 +491,9 @@ class BetterThermostatPresetLogicTests(unittest.TestCase):
 
         entry = types.SimpleNamespace(
             data={
+                self.const.CONF_AUTOCREATE: True,
                 self.const.CONF_EXCLUDED_PRESETS: ["boost", "none"],
-                self.const.CONF_ENTITY_ID_SUFFIX: "heizpreset",
+                self.const.CONF_ENTITY_ID_SUFFIX: "heating_preset",
                 self.const.CONF_NAME_SUFFIX: "Heizpreset",
             },
             async_on_unload=lambda callback: None,
@@ -516,9 +527,10 @@ class BetterThermostatPresetLogicTests(unittest.TestCase):
 
         entry = types.SimpleNamespace(
             data={
+                self.const.CONF_AUTOCREATE: True,
                 self.const.CONF_EXCLUDED_PRESETS: ["none"],
                 self.const.CONF_ENTITY_EXCLUDED_PRESETS: {"climate.living_room": ["boost", "eco"]},
-                self.const.CONF_ENTITY_ID_SUFFIX: "heizpreset",
+                self.const.CONF_ENTITY_ID_SUFFIX: "heating_preset",
                 self.const.CONF_NAME_SUFFIX: "Heizpreset",
             },
             async_on_unload=lambda callback: None,
@@ -550,8 +562,9 @@ class BetterThermostatPresetLogicTests(unittest.TestCase):
         )
         entry = types.SimpleNamespace(
             data={
+                self.const.CONF_AUTOCREATE: True,
                 self.const.CONF_EXCLUDED_PRESETS: ["boost"],
-                self.const.CONF_ENTITY_ID_SUFFIX: "heizpreset",
+                self.const.CONF_ENTITY_ID_SUFFIX: "heating_preset",
                 self.const.CONF_NAME_SUFFIX: "Heizpreset",
             },
             options={
@@ -830,7 +843,7 @@ class BetterThermostatPresetLogicTests(unittest.TestCase):
             source_unique_id="abc123",
             source_name="Wohnzimmer",
             excluded_presets={"boost", "none"},
-            entity_id_suffix="heizpreset",
+            entity_id_suffix="heating_preset",
             name_suffix="Heizpreset",
         )
         calls = []
@@ -868,16 +881,130 @@ class BetterThermostatPresetLogicTests(unittest.TestCase):
         self.assertEqual(result["type"], "create_entry")
         self.assertEqual(result["title"], "Better Thermostat Presets")
         self.assertEqual(result["data"][self.const.CONF_EXCLUDED_PRESETS], ["boost", "none"])
-        self.assertEqual(result["data"][self.const.CONF_ENTITY_ID_SUFFIX], "heizpreset")
+        self.assertEqual(
+            result["data"][self.const.CONF_ENTITY_ID_SUFFIX],
+            "heating_preset",
+        )
+        self.assertEqual(
+            result["data"][self.const.CONF_NAME_SUFFIX],
+            "heating preset",
+        )
         self.assertEqual(result["data"][self.const.CONF_NAME_MODE], "suffix")
-        self.assertTrue(result["data"][self.const.CONF_AUTOCREATE])
+        self.assertFalse(result["data"][self.const.CONF_AUTOCREATE])
+
+    def test_migration_updates_previous_defaults_and_selector_unique_id(self):
+        entry = types.SimpleNamespace(
+            version=1,
+            minor_version=1,
+            entry_id="entry-1",
+            data={
+                self.const.CONF_AUTOCREATE: True,
+                self.const.CONF_ENTITY_ID_SUFFIX: "heizpreset",
+                self.const.CONF_NAME_SUFFIX: "Heizpreset",
+            },
+            options={},
+        )
+        legacy_entity = types.SimpleNamespace(
+            domain="select",
+            platform=self.const.DOMAIN,
+            unique_id="room-1_heizpreset",
+            entity_id="select.climate_eg_bad_heizung_heizpreset",
+            original_name="climate.eg_bad_heizung: Heizpreset",
+        )
+        migrated_ids = []
+
+        registry = types.SimpleNamespace(
+            async_get_entity_id=lambda domain, platform, unique_id: (
+                "climate.eg_bad_heizung"
+                if (domain, platform, unique_id)
+                == ("climate", "better_thermostat", "room-1")
+                else None
+            )
+        )
+        self.integration_module.er.async_get = lambda hass: registry
+
+        async def migrate_entries(hass, entry_id, migration_callback):
+            migrated_ids.append(migration_callback(legacy_entity))
+
+        self.integration_module.er.async_migrate_entries = migrate_entries
+
+        def update_entry(config_entry, **kwargs):
+            for key, value in kwargs.items():
+                setattr(config_entry, key, value)
+
+        hass = types.SimpleNamespace(
+            config_entries=types.SimpleNamespace(async_update_entry=update_entry)
+        )
+
+        self.assertTrue(
+            asyncio.run(
+                self.integration_module.async_migrate_entry(hass, entry)
+            )
+        )
+        self.assertFalse(entry.data[self.const.CONF_AUTOCREATE])
+        self.assertEqual(
+            entry.data[self.const.CONF_ENTITY_ID_SUFFIX],
+            "heating_preset",
+        )
+        self.assertEqual(
+            entry.data[self.const.CONF_NAME_SUFFIX],
+            "heating preset",
+        )
+        self.assertEqual(entry.minor_version, 4)
+        self.assertEqual(
+            migrated_ids,
+            [{
+                "new_unique_id": "room-1_heating_preset",
+                "new_entity_id": "select.eg_bad_heizung_heating_preset",
+            }],
+        )
+
+    def test_migration_preserves_explicit_autocreate_option(self):
+        entry = types.SimpleNamespace(
+            version=1,
+            minor_version=1,
+            entry_id="entry-2",
+            data={
+                self.const.CONF_AUTOCREATE: True,
+                self.const.CONF_ENTITY_ID_SUFFIX: "heizpreset",
+                self.const.CONF_NAME_SUFFIX: "Heizpreset",
+            },
+            options={self.const.CONF_AUTOCREATE: True},
+        )
+        registry = types.SimpleNamespace(async_get_entity_id=lambda *args: None)
+        self.integration_module.er.async_get = lambda hass: registry
+        self.integration_module.er.async_migrate_entries = (
+            lambda hass, entry_id, migration_callback: asyncio.sleep(0)
+        )
+
+        def update_entry(config_entry, **kwargs):
+            for key, value in kwargs.items():
+                setattr(config_entry, key, value)
+
+        hass = types.SimpleNamespace(
+            config_entries=types.SimpleNamespace(async_update_entry=update_entry)
+        )
+
+        asyncio.run(self.integration_module.async_migrate_entry(hass, entry))
+
+        self.assertTrue(entry.data[self.const.CONF_AUTOCREATE])
+        self.assertTrue(entry.options[self.const.CONF_AUTOCREATE])
+        self.assertEqual(
+            entry.data[self.const.CONF_ENTITY_ID_SUFFIX],
+            "heating_preset",
+        )
+        self.assertEqual(
+            entry.data[self.const.CONF_NAME_SUFFIX],
+            "heating preset",
+        )
+        self.assertEqual(entry.minor_version, 4)
 
     def test_options_flow_uses_existing_entry_data_and_selected_entity_options(self):
         config_entry = types.SimpleNamespace(
             data={
                 self.const.CONF_EXCLUDED_PRESETS: ["boost", "none"],
-                self.const.CONF_ENTITY_ID_SUFFIX: "heizpreset",
-                self.const.CONF_NAME_SUFFIX: "Heizpreset",
+                self.const.CONF_ENTITY_ID_SUFFIX: "heating_preset",
+                self.const.CONF_NAME_SUFFIX: "heating preset",
             },
             options={},
         )
@@ -905,6 +1032,12 @@ class BetterThermostatPresetLogicTests(unittest.TestCase):
         schema_fields = result["data_schema"].args[0]
         field_names = [field.key for field in schema_fields]
         self.assertIn(self.const.CONF_AUTOCREATE, field_names)
+        autocreate_field = next(
+            field
+            for field in schema_fields
+            if field.key == self.const.CONF_AUTOCREATE
+        )
+        self.assertFalse(autocreate_field.default)
         self.assertIn(self.const.CONF_SELECTED_ENTITIES, field_names)
         entity_field = next(
             field

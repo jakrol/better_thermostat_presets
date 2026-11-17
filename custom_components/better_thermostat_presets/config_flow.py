@@ -28,6 +28,7 @@ from .const import (
     CONF_NAME_REPLACEMENT,
 )
 
+
 def _normalize_excluded_presets(value):
     """Normalize excluded preset values into lowercase strings."""
 
@@ -256,6 +257,7 @@ class BetterThermostatPresetsConfigFlow(
     """Handle integration setup."""
 
     VERSION = 1
+    MINOR_VERSION = 4
 
     async def async_step_user(self, user_input=None):
         """Create the integration entry using defaults."""
