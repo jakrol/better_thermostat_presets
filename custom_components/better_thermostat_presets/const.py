@@ -8,6 +8,7 @@ DEFAULT_NAME_PATTERN = ""
 DEFAULT_NAME_REPLACEMENT = ""
 
 CONF_EXCLUDED_PRESETS = "excluded_presets"
+CONF_ENTITY_EXCLUDED_PRESETS = "entity_excluded_presets"
 CONF_ENTITY_ID_SUFFIX = "entity_id_suffix"
 CONF_NAME_SUFFIX = "name_suffix"
 CONF_NAME_MODE = "name_mode"

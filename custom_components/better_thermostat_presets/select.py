@@ -16,6 +16,7 @@ from .const import (
     NAME_MODE_PREFIX,
     NAME_MODE_REGEX,
     CONF_EXCLUDED_PRESETS,
+    CONF_ENTITY_EXCLUDED_PRESETS,
     CONF_ENTITY_ID_SUFFIX,
     CONF_NAME_SUFFIX,
     CONF_NAME_MODE,
@@ -180,6 +181,15 @@ async def async_setup_entry(
         )
     }
 
+    entity_excluded = entry.data.get(CONF_ENTITY_EXCLUDED_PRESETS, {})
+    if isinstance(entity_excluded, str):
+        try:
+            import json
+
+            entity_excluded = json.loads(entity_excluded)
+        except (TypeError, ValueError):
+            entity_excluded = {}
+
     entity_suffix = entry.data.get(
         CONF_ENTITY_ID_SUFFIX,
         DEFAULT_ENTITY_ID_SUFFIX,
@@ -210,11 +220,28 @@ async def async_setup_entry(
     entities = []
 
     for source in sources:
+        source_excluded = set(excluded)
+        if isinstance(entity_excluded, dict):
+            for entity_id, presets in entity_excluded.items():
+                if entity_id == source.entity_id:
+                    if isinstance(presets, str):
+                        source_excluded.update(
+                            preset.strip().lower()
+                            for preset in presets.split(",")
+                            if preset.strip()
+                        )
+                    else:
+                        source_excluded.update(
+                            str(preset).strip().lower()
+                            for preset in presets
+                            if str(preset).strip()
+                        )
+
         entity = BetterThermostatPresetSelect(
             source.entity_id,
             source.unique_id,
             source.name or source.original_name or source.entity_id,
-            excluded,
+            source_excluded,
             entity_suffix,
             name_suffix,
             name_pattern,

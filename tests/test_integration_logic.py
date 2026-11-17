@@ -174,6 +174,20 @@ class BetterThermostatPresetLogicTests(unittest.TestCase):
         self.assertEqual(parsed["name_pattern"], "^(.+)$")
         self.assertEqual(parsed["name_replacement"], "\\1: Heizpreset")
 
+    def test_parse_options_supports_entity_specific_excluded_presets(self):
+        parsed = self.flow_module.parse_options({
+            self.const.CONF_EXCLUDED_PRESETS: "boost, none",
+            self.const.CONF_ENTITY_EXCLUDED_PRESETS: '{"climate.living_room": ["eco"], "climate.kitchen": "away, boost"}',
+            self.const.CONF_ENTITY_ID_SUFFIX: "heizpreset",
+            self.const.CONF_NAME_SUFFIX: "Heizpreset",
+        })
+
+        self.assertEqual(parsed["excluded_presets"], ["boost", "none"])
+        self.assertEqual(
+            parsed["entity_excluded_presets"],
+            {"climate.living_room": ["eco"], "climate.kitchen": ["away", "boost"]},
+        )
+
     def test_select_entity_uses_regex_pattern_for_friendly_name(self):
         entity = self.select_module.BetterThermostatPresetSelect(
             source_entity_id="climate.room",
@@ -293,6 +307,39 @@ class BetterThermostatPresetLogicTests(unittest.TestCase):
         self.assertEqual(len(added), 1)
         self.assertEqual(added[0].source_entity_id, "climate.living_room")
         self.assertEqual(added[0]._attr_name, "Wohnzimmer: Heizpreset")
+
+    def test_async_setup_entry_applies_entity_specific_exclusions(self):
+        source = types.SimpleNamespace(
+            entity_id="climate.living_room",
+            unique_id="abc123",
+            name="Wohnzimmer",
+            original_name="Wohnzimmer",
+            platform="better_thermostat",
+            domain="climate",
+            disabled_by=None,
+        )
+        fake_registry = types.SimpleNamespace(entities={source.entity_id: source})
+        self.select_module.er.async_get = lambda hass: fake_registry
+
+        entry = types.SimpleNamespace(
+            data={
+                self.const.CONF_EXCLUDED_PRESETS: ["none"],
+                self.const.CONF_ENTITY_EXCLUDED_PRESETS: {"climate.living_room": ["boost", "eco"]},
+                self.const.CONF_ENTITY_ID_SUFFIX: "heizpreset",
+                self.const.CONF_NAME_SUFFIX: "Heizpreset",
+            }
+        )
+        added = []
+
+        asyncio.run(
+            self.select_module.async_setup_entry(
+                hass={},
+                entry=entry,
+                async_add_entities=lambda entities: added.extend(entities),
+            )
+        )
+
+        self.assertEqual(added[0].excluded_presets, {"none", "boost", "eco"})
 
     def test_async_select_option_ignores_invalid_values_and_calls_service_for_valid_ones(self):
         source_state = types.SimpleNamespace(

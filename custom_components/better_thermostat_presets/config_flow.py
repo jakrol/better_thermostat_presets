@@ -1,3 +1,5 @@
+import json
+
 import voluptuous as vol
 
 from homeassistant import config_entries
@@ -14,12 +16,55 @@ from .const import (
     NAME_MODE_PREFIX,
     NAME_MODE_REGEX,
     CONF_EXCLUDED_PRESETS,
+    CONF_ENTITY_EXCLUDED_PRESETS,
     CONF_ENTITY_ID_SUFFIX,
     CONF_NAME_SUFFIX,
     CONF_NAME_MODE,
     CONF_NAME_PATTERN,
     CONF_NAME_REPLACEMENT,
 )
+
+
+def _normalize_excluded_presets(value):
+    """Normalize excluded preset values into lowercase strings."""
+
+    if value is None:
+        return []
+
+    if isinstance(value, str):
+        value = value.split(",")
+
+    normalized = []
+    for item in value:
+        if item is None:
+            continue
+        normalized.extend(
+            part.strip().lower()
+            for part in str(item).split(",")
+            if part.strip()
+        )
+
+    return normalized
+
+
+def _normalize_entity_excluded_presets(value):
+    """Normalize per-entity excluded preset overrides."""
+
+    if not value:
+        return {}
+
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except json.JSONDecodeError:
+            return {}
+
+    normalized = {}
+    if isinstance(value, dict):
+        for entity_id, presets in value.items():
+            normalized[str(entity_id)] = _normalize_excluded_presets(presets)
+
+    return normalized
 
 
 def get_schema(defaults):
@@ -31,6 +76,14 @@ def get_schema(defaults):
             CONF_EXCLUDED_PRESETS,
             default=", ".join(
                 defaults[CONF_EXCLUDED_PRESETS]
+            ),
+        ): str,
+        vol.Optional(
+            CONF_ENTITY_EXCLUDED_PRESETS,
+            default=json.dumps(
+                defaults.get(CONF_ENTITY_EXCLUDED_PRESETS, {}),
+                ensure_ascii=False,
+                sort_keys=True,
             ),
         ): str,
         vol.Required(
@@ -71,15 +124,17 @@ def get_schema(defaults):
 def parse_options(user_input):
     """Normalize configuration options."""
 
-    excluded = [
-        item.strip().lower()
-        for item in user_input[CONF_EXCLUDED_PRESETS].split(",")
-        if item.strip()
-    ]
+    excluded = _normalize_excluded_presets(
+        user_input.get(CONF_EXCLUDED_PRESETS, DEFAULT_EXCLUDED_PRESETS)
+    )
+    entity_excluded = _normalize_entity_excluded_presets(
+        user_input.get(CONF_ENTITY_EXCLUDED_PRESETS, {})
+    )
 
     mode = user_input.get(CONF_NAME_MODE, DEFAULT_NAME_MODE)
     parsed = {
         CONF_EXCLUDED_PRESETS: excluded,
+        CONF_ENTITY_EXCLUDED_PRESETS: entity_excluded,
         CONF_ENTITY_ID_SUFFIX: user_input[
             CONF_ENTITY_ID_SUFFIX
         ].strip(),
@@ -122,6 +177,7 @@ class BetterThermostatPresetsConfigFlow(
 
         defaults = {
             CONF_EXCLUDED_PRESETS: DEFAULT_EXCLUDED_PRESETS,
+            CONF_ENTITY_EXCLUDED_PRESETS: {},
             CONF_ENTITY_ID_SUFFIX: DEFAULT_ENTITY_ID_SUFFIX,
             CONF_NAME_MODE: DEFAULT_NAME_MODE,
             CONF_NAME_SUFFIX: DEFAULT_NAME_SUFFIX,
@@ -163,6 +219,10 @@ class BetterThermostatPresetsOptionsFlow(
             CONF_EXCLUDED_PRESETS: self.config_entry.data.get(
                 CONF_EXCLUDED_PRESETS,
                 DEFAULT_EXCLUDED_PRESETS,
+            ),
+            CONF_ENTITY_EXCLUDED_PRESETS: self.config_entry.data.get(
+                CONF_ENTITY_EXCLUDED_PRESETS,
+                {},
             ),
             CONF_ENTITY_ID_SUFFIX: self.config_entry.data.get(
                 CONF_ENTITY_ID_SUFFIX,
