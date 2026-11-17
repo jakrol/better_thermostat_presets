@@ -15,9 +15,9 @@
         "data_description": {
           "excluded_presets": "Kommagetrennte Presets, die nicht als Optionen erscheinen sollen.",
           "entity_id_suffix": "Suffix, der an die erzeugte Entity-ID angehängt wird.",
-          "name_mode": "Wähle nur einen Modus: Prefix hängt einen festen Zusatz an, Regex ersetzt den Namen mit einem Muster.",
+          "name_mode": "Wähle, ob ein Zusatz angehängt oder der freundliche Name mit Regex umgeschrieben wird.",
           "name_suffix": "Fester Zusatz, zum Beispiel: Heizpreset.",
-          "name_pattern": "Regex-Syntax, z. B. ^(.+)$ oder .*\\((.+)\\).* . Das Muster wird auf den originalen Namen angewendet.",
+          "name_pattern": "Regex-Syntax, z. B. ^(.+)$ oder .*\\((.+)\\).* . Das Muster wird auf den friendly_name angewendet.",
           "name_replacement": "Ersetzungstext. Du kannst Backreferences wie \\1 oder \\g<0> verwenden."
         }
       }
@@ -30,23 +30,50 @@
     "step": {
       "init": {
         "title": "Einstellungen",
-        "description": "Lege gemeinsame Benennungs- und Ausschlussregeln fest. Für jedes gefundene Better Thermostat wird ein zusätzliches Feld für individuelle Ausschlüsse angezeigt.",
+        "description": "Lege gemeinsame Standardwerte fest oder wähle bei deaktivierter automatischer Erstellung gezielt vorhandene Better Thermostats aus.",
         "data": {
           "excluded_presets": "Auszuschließende Presets",
           "entity_id_suffix": "Zusatz für Entity-IDs",
           "name_mode": "Namensmodus",
+          "autocreate": "Automatisch erstellen",
+          "selected_entities": "Vorhandene Better Thermostats"
+        },
+        "data_description": {
+          "excluded_presets": "Kommagetrennte Presets, die nicht als Optionen erscheinen sollen.",
+          "entity_id_suffix": "Suffix, der an die erzeugte Entity-ID angehängt wird.",
+          "name_mode": "Wähle, ob ein Zusatz angehängt oder der freundliche Name mit Regex umgeschrieben wird.",
+          "autocreate": "Erstellt Selector- und Ausschluss-Entitäten für alle vorhandenen und zukünftigen Better Thermostats.",
+          "selected_entities": "Wenn die automatische Erstellung deaktiviert ist, wähle vorhandene Thermostats für die Erstellung aus."
+        }
+      },
+      "naming": {
+        "title": "Benennung",
+        "description": "Wende die ausgewählte Benennungsregel auf den friendly_name des Better Thermostat an.",
+        "data": {
           "name_suffix": "Zusatz",
           "name_pattern": "Regex-Muster",
           "name_replacement": "Ersetzung"
         },
         "data_description": {
-          "excluded_presets": "Kommagetrennte Presets, die nicht als Optionen erscheinen sollen.",
-          "entity_id_suffix": "Suffix, der an die erzeugte Entity-ID angehängt wird.",
-          "name_mode": "Wähle nur einen Modus: Prefix hängt einen festen Zusatz an, Regex ersetzt den Namen mit einem Muster.",
-          "name_suffix": "Fester Zusatz, zum Beispiel: Heizpreset.",
-          "name_pattern": "Regex-Syntax, z. B. ^(.+)$ oder .*\\((.+)\\).* . Das Muster wird auf den originalen Namen angewendet.",
+          "name_suffix": "Text, der an den freundlichen Namen des Better Thermostat angehängt wird.",
+          "name_pattern": "Regex-Syntax, z. B. ^(.+)$ oder .*\\((.+)\\).* . Das Muster wird auf den friendly_name angewendet.",
           "name_replacement": "Ersetzungstext. Du kannst Backreferences wie \\1 oder \\g<0> verwenden."
         }
+      }
+    }
+  },
+  "selector": {
+    "name_mode": {
+      "options": {
+        "suffix": "Zusatz",
+        "regex": "Regex"
+      }
+    }
+  },
+  "entity": {
+    "text": {
+      "excluded_presets": {
+        "name": "Auszuschließende Presets"
       }
     }
   }

@@ -15,9 +15,9 @@
         "data_description": {
           "excluded_presets": "Préréglages séparés par des virgules qui ne doivent pas apparaître comme options.",
           "entity_id_suffix": "Suffixe ajouté à l'ID d'entité généré.",
-          "name_mode": "Choisissez un seul mode : Prefix ajoute un suffixe fixe, Regex réécrit le nom avec un motif.",
+          "name_mode": "Choisissez d'ajouter un suffixe ou de réécrire le nom convivial avec une regex.",
           "name_suffix": "Texte fixe ajouté au nom du thermostat, par exemple : Heizpreset.",
-          "name_pattern": "Syntaxe regex, par exemple ^(.+)$ ou .*\\((.+)\\).* . Le motif s'applique au nom d'origine.",
+          "name_pattern": "Syntaxe regex, par exemple ^(.+)$ ou .*\\((.+)\\).* . Le motif s'applique au friendly_name.",
           "name_replacement": "Texte de remplacement. Vous pouvez utiliser des références arrière comme \\1 ou \\g<0>."
         }
       }
@@ -30,23 +30,50 @@
     "step": {
       "init": {
         "title": "Paramètres",
-        "description": "Définissez les règles communes de nommage et d'exclusion. Un champ d'exclusion individuel apparaît pour chaque Better Thermostat détecté.",
+        "description": "Définissez les valeurs communes ou choisissez des Better Thermostats existants lorsque la création automatique est désactivée.",
         "data": {
           "excluded_presets": "Préréglages exclus",
           "entity_id_suffix": "Suffixe de l'entité",
           "name_mode": "Mode de nommage",
+          "autocreate": "Création automatique",
+          "selected_entities": "Better Thermostats existants"
+        },
+        "data_description": {
+          "excluded_presets": "Préréglages séparés par des virgules qui ne doivent pas apparaître comme options.",
+          "entity_id_suffix": "Suffixe ajouté à l'ID d'entité généré.",
+          "name_mode": "Choisissez d'ajouter un suffixe ou de réécrire le nom convivial avec une regex.",
+          "autocreate": "Crée les sélecteurs et les entités d'exclusion pour tous les Better Thermostats existants et futurs.",
+          "selected_entities": "Lorsque la création automatique est désactivée, choisissez les thermostats existants à créer."
+        }
+      },
+      "naming": {
+        "title": "Nommage",
+        "description": "Appliquez la règle choisie au friendly_name du Better Thermostat.",
+        "data": {
           "name_suffix": "Suffixe",
           "name_pattern": "Motif regex",
           "name_replacement": "Remplacement"
         },
         "data_description": {
-          "excluded_presets": "Préréglages séparés par des virgules qui ne doivent pas apparaître comme options.",
-          "entity_id_suffix": "Suffixe ajouté à l'ID d'entité généré.",
-          "name_mode": "Choisissez un seul mode : Prefix ajoute un suffixe fixe, Regex réécrit le nom avec un motif.",
-          "name_suffix": "Texte fixe ajouté au nom du thermostat, par exemple : Heizpreset.",
-          "name_pattern": "Syntaxe regex, par exemple ^(.+)$ ou .*\\((.+)\\).* . Le motif s'applique au nom d'origine.",
+          "name_suffix": "Texte ajouté au nom convivial du Better Thermostat.",
+          "name_pattern": "Syntaxe regex, par exemple ^(.+)$ ou .*\\((.+)\\).* . Le motif s'applique au friendly_name.",
           "name_replacement": "Texte de remplacement. Vous pouvez utiliser des références arrière comme \\1 ou \\g<0>."
         }
+      }
+    }
+  },
+  "selector": {
+    "name_mode": {
+      "options": {
+        "suffix": "Suffixe",
+        "regex": "Regex"
+      }
+    }
+  },
+  "entity": {
+    "text": {
+      "excluded_presets": {
+        "name": "Préréglages exclus"
       }
     }
   }

@@ -15,9 +15,9 @@
         "data_description": {
           "excluded_presets": "Comma-separated preset names that should not appear as options.",
           "entity_id_suffix": "Suffix appended to the generated entity ID.",
-          "name_mode": "Choose only one mode: Prefix appends a fixed suffix, Regex rewrites the name using a pattern.",
-          "name_suffix": "Fixed text appended to the thermostat name, for example: Heizpreset.",
-          "name_pattern": "Regex syntax, for example ^(.+)$ or .*\\((.+)\\).* . The pattern is applied to the original name.",
+          "name_mode": "Choose whether to append a suffix or rewrite the friendly name with a regex.",
+          "name_suffix": "Text appended to the Better Thermostat friendly name.",
+          "name_pattern": "Regex syntax, for example ^(.+)$ or .*\\((.+)\\).* . The pattern is applied to the friendly name.",
           "name_replacement": "Replacement text. You can use backreferences such as \\1 or \\g<0>."
         }
       }
@@ -30,23 +30,50 @@
     "step": {
       "init": {
         "title": "Settings",
-        "description": "Set shared naming and exclusion defaults. Additional exclusion fields are shown for each detected Better Thermostat.",
+        "description": "Set shared defaults for Better Thermostat entities, or choose specific thermostats when Autocreate is off.",
         "data": {
           "excluded_presets": "Excluded presets",
           "entity_id_suffix": "Entity ID suffix",
           "name_mode": "Name mode",
+          "autocreate": "Autocreate",
+          "selected_entities": "Existing Better Thermostats"
+        },
+        "data_description": {
+          "excluded_presets": "Comma-separated preset names that should not appear as options.",
+          "entity_id_suffix": "Suffix appended to the generated entity ID.",
+          "name_mode": "Choose whether to append a suffix or rewrite the friendly name with a regex.",
+          "autocreate": "Create selectors for all existing and future Better Thermostats.",
+          "selected_entities": "When Autocreate is off, choose the existing thermostats that should get selector and exclusion entities."
+        }
+      },
+      "naming": {
+        "title": "Naming",
+        "description": "Apply the selected naming rule to the Better Thermostat friendly name.",
+        "data": {
           "name_suffix": "Suffix",
           "name_pattern": "Regex pattern",
           "name_replacement": "Replacement"
         },
         "data_description": {
-          "excluded_presets": "Comma-separated preset names that should not appear as options.",
-          "entity_id_suffix": "Suffix appended to the generated entity ID.",
-          "name_mode": "Choose only one mode: Prefix appends a fixed suffix, Regex rewrites the name using a pattern.",
-          "name_suffix": "Fixed text appended to the thermostat name, for example: Heizpreset.",
-          "name_pattern": "Regex syntax, for example ^(.+)$ or .*\\((.+)\\).* . The pattern is applied to the original name.",
+          "name_suffix": "Text appended to the Better Thermostat friendly name.",
+          "name_pattern": "Regex syntax, for example ^(.+)$ or .*\\((.+)\\).* . The pattern is applied to the friendly name.",
           "name_replacement": "Replacement text. You can use backreferences such as \\1 or \\g<0>."
         }
+      }
+    }
+  },
+  "selector": {
+    "name_mode": {
+      "options": {
+        "suffix": "Suffix",
+        "regex": "Regex"
+      }
+    }
+  },
+  "entity": {
+    "text": {
+      "excluded_presets": {
+        "name": "Excluded presets"
       }
     }
   }

@@ -18,12 +18,33 @@ def install_runtime_stubs():
     components = types.ModuleType("homeassistant.components")
     components.__path__ = []
     select_mod = types.ModuleType("homeassistant.components.select")
+    text_mod = types.ModuleType("homeassistant.components.text")
 
     class SelectEntity:
         def __init__(self):
             self.hass = None
 
+        async def async_added_to_hass(self):
+            return None
+
+        def async_on_remove(self, callback):
+            return None
+
     select_mod.SelectEntity = SelectEntity
+
+    class TextEntity:
+        @property
+        def native_value(self):
+            return self._attr_native_value
+
+        async def async_added_to_hass(self):
+            return None
+
+    class TextMode:
+        TEXT = "text"
+
+    text_mod.TextEntity = TextEntity
+    text_mod.TextMode = TextMode
 
     config_entries = types.ModuleType("homeassistant.config_entries")
 
@@ -80,12 +101,74 @@ def install_runtime_stubs():
 
     core.HomeAssistant = HomeAssistant
     core.callback = lambda func: func
+    const_mod = types.ModuleType("homeassistant.const")
+
+    class EntityCategory:
+        CONFIG = "config"
+
+    const_mod.EntityCategory = EntityCategory
 
     helpers = types.ModuleType("homeassistant.helpers")
     helpers.__path__ = []
     entity_registry = types.ModuleType("homeassistant.helpers.entity_registry")
     device_registry = types.ModuleType("homeassistant.helpers.device_registry")
     entity_platform = types.ModuleType("homeassistant.helpers.entity_platform")
+    event = types.ModuleType("homeassistant.helpers.event")
+    dispatcher = types.ModuleType("homeassistant.helpers.dispatcher")
+    restore_state = types.ModuleType("homeassistant.helpers.restore_state")
+    selector = types.ModuleType("homeassistant.helpers.selector")
+
+    added_domain_listeners = []
+    dispatcher_listeners = {}
+
+    def async_track_state_added_domain(hass, domain, callback):
+        added_domain_listeners.append((hass, domain, callback))
+        return lambda: None
+
+    def async_dispatcher_connect(hass, signal, callback):
+        dispatcher_listeners.setdefault(signal, []).append(callback)
+
+        def disconnect():
+            dispatcher_listeners[signal].remove(callback)
+
+        return disconnect
+
+    def async_dispatcher_send(hass, signal, *args):
+        for callback in dispatcher_listeners.get(signal, []):
+            callback(*args)
+
+    event.async_track_state_added_domain = async_track_state_added_domain
+    event.added_domain_listeners = added_domain_listeners
+    dispatcher.async_dispatcher_connect = async_dispatcher_connect
+    dispatcher.async_dispatcher_send = async_dispatcher_send
+
+    class RestoreEntity:
+        async def async_added_to_hass(self):
+            return None
+
+        async def async_get_last_state(self):
+            return None
+
+    restore_state.RestoreEntity = RestoreEntity
+
+    class SelectSelectorMode:
+        DROPDOWN = "dropdown"
+
+    class SelectSelectorConfig:
+        def __init__(self, **kwargs):
+            self.kwargs = kwargs
+
+    class SelectSelector:
+        def __init__(self, config):
+            self.config = config
+
+    class BooleanSelector:
+        pass
+
+    selector.SelectSelectorMode = SelectSelectorMode
+    selector.SelectSelectorConfig = SelectSelectorConfig
+    selector.SelectSelector = SelectSelector
+    selector.BooleanSelector = BooleanSelector
 
     class AddEntitiesCallback:
         pass
@@ -113,17 +196,28 @@ def install_runtime_stubs():
     helpers.entity_registry = entity_registry
     helpers.device_registry = device_registry
     helpers.entity_platform = entity_platform
+    helpers.event = event
+    helpers.dispatcher = dispatcher
+    helpers.restore_state = restore_state
+    helpers.selector = selector
     components.select = select_mod
+    components.text = text_mod
 
     sys.modules["homeassistant"] = homeassistant
     sys.modules["homeassistant.components"] = components
     sys.modules["homeassistant.components.select"] = select_mod
+    sys.modules["homeassistant.components.text"] = text_mod
     sys.modules["homeassistant.config_entries"] = config_entries
     sys.modules["homeassistant.core"] = core
+    sys.modules["homeassistant.const"] = const_mod
     sys.modules["homeassistant.helpers"] = helpers
     sys.modules["homeassistant.helpers.entity_registry"] = entity_registry
     sys.modules["homeassistant.helpers.device_registry"] = device_registry
     sys.modules["homeassistant.helpers.entity_platform"] = entity_platform
+    sys.modules["homeassistant.helpers.event"] = event
+    sys.modules["homeassistant.helpers.dispatcher"] = dispatcher
+    sys.modules["homeassistant.helpers.restore_state"] = restore_state
+    sys.modules["homeassistant.helpers.selector"] = selector
 
     voluptuous = types.ModuleType("voluptuous")
 
@@ -171,14 +265,15 @@ def load_package_modules():
 
     const = load_module(f"{package_name}.const", PACKAGE_DIR / "const.py")
     select = load_module(f"{package_name}.select", PACKAGE_DIR / "select.py")
+    text = load_module(f"{package_name}.text", PACKAGE_DIR / "text.py")
     flow = load_module(f"{package_name}.config_flow", PACKAGE_DIR / "config_flow.py")
 
-    return const, select, flow
+    return const, select, text, flow
 
 
 class BetterThermostatPresetLogicTests(unittest.TestCase):
     def setUp(self):
-        self.const, self.select_module, self.flow_module = load_package_modules()
+        self.const, self.select_module, self.text_module, self.flow_module = load_package_modules()
 
     def test_slugify_replaces_invalid_chars(self):
         self.assertEqual(self.select_module.slugify("My Preset!"), "my_preset")
@@ -214,21 +309,21 @@ class BetterThermostatPresetLogicTests(unittest.TestCase):
             {"climate.living_room": ["eco"], "climate.kitchen": ["away", "boost"]},
         )
 
-    def test_parse_options_reads_entity_fields_from_configure_form(self):
-        field = "Excluded presets for Living Room [climate.living_room]"
+    def test_parse_options_reads_selected_entities_and_autocreate(self):
         parsed = self.flow_module.parse_options(
             {
                 self.const.CONF_EXCLUDED_PRESETS: "boost, none",
                 self.const.CONF_ENTITY_ID_SUFFIX: "heizpreset",
-                self.const.CONF_NAME_SUFFIX: "Heizpreset",
-                field: " away, eco ",
+                self.const.CONF_NAME_MODE: "suffix",
+                self.const.CONF_AUTOCREATE: False,
+                self.const.CONF_SELECTED_ENTITIES: ["climate.living_room"],
             },
-            {field: "climate.living_room"},
         )
 
+        self.assertFalse(parsed[self.const.CONF_AUTOCREATE])
         self.assertEqual(
-            parsed[self.const.CONF_ENTITY_EXCLUDED_PRESETS],
-            {"climate.living_room": ["away", "eco"]},
+            parsed[self.const.CONF_SELECTED_ENTITIES],
+            ["climate.living_room"],
         )
 
     def test_select_entity_uses_regex_pattern_for_friendly_name(self):
@@ -245,6 +340,25 @@ class BetterThermostatPresetLogicTests(unittest.TestCase):
         )
 
         self.assertEqual(entity._attr_name, "Wohnzimmer: Nachtmodus")
+
+    def test_source_state_friendly_name_is_used_instead_of_entity_id(self):
+        source = types.SimpleNamespace(
+            entity_id="climate.dg_schlafzimmer_heizung",
+            name=None,
+            original_name=None,
+        )
+        hass = types.SimpleNamespace(
+            states=types.SimpleNamespace(
+                get=lambda entity_id: types.SimpleNamespace(
+                    attributes={"friendly_name": "DG: Schlafzimmer: Heizung"}
+                )
+            )
+        )
+
+        self.assertEqual(
+            self.select_module.get_source_friendly_name(hass, source),
+            "DG: Schlafzimmer: Heizung",
+        )
 
     def test_select_entity_exposes_current_and_available_presets(self):
         source_state = types.SimpleNamespace(
@@ -349,7 +463,8 @@ class BetterThermostatPresetLogicTests(unittest.TestCase):
                 self.const.CONF_EXCLUDED_PRESETS: ["boost", "none"],
                 self.const.CONF_ENTITY_ID_SUFFIX: "heizpreset",
                 self.const.CONF_NAME_SUFFIX: "Heizpreset",
-            }
+            },
+            async_on_unload=lambda callback: None,
         )
         added = []
 
@@ -384,7 +499,8 @@ class BetterThermostatPresetLogicTests(unittest.TestCase):
                 self.const.CONF_ENTITY_EXCLUDED_PRESETS: {"climate.living_room": ["boost", "eco"]},
                 self.const.CONF_ENTITY_ID_SUFFIX: "heizpreset",
                 self.const.CONF_NAME_SUFFIX: "Heizpreset",
-            }
+            },
+            async_on_unload=lambda callback: None,
         )
         added = []
 
@@ -420,6 +536,7 @@ class BetterThermostatPresetLogicTests(unittest.TestCase):
             options={
                 self.const.CONF_EXCLUDED_PRESETS: ["none"],
             },
+            async_on_unload=lambda callback: None,
         )
         source_state = types.SimpleNamespace(
             state="heat",
@@ -441,6 +558,185 @@ class BetterThermostatPresetLogicTests(unittest.TestCase):
         self.assertEqual(added[0].excluded_presets, {"none"})
         added[0].hass = hass
         self.assertEqual(added[0].options, ["eco", "boost"])
+
+    def test_async_setup_entry_creates_only_selected_entities_when_autocreate_off(self):
+        sources = [
+            types.SimpleNamespace(
+                entity_id=f"climate.room_{index}",
+                unique_id=f"room-{index}",
+                name=f"Room {index}",
+                original_name=f"Room {index}",
+                platform="better_thermostat",
+                domain="climate",
+                disabled_by=None,
+            )
+            for index in (1, 2)
+        ]
+        self.select_module.er.async_get = lambda hass: types.SimpleNamespace(
+            entities={source.entity_id: source for source in sources}
+        )
+        entry = types.SimpleNamespace(
+            data={
+                self.const.CONF_AUTOCREATE: False,
+                self.const.CONF_SELECTED_ENTITIES: ["climate.room_2"],
+                self.const.CONF_ENTITY_ID_SUFFIX: "preset",
+                self.const.CONF_NAME_SUFFIX: "Presets",
+            },
+            async_on_unload=lambda callback: None,
+        )
+        added = []
+
+        asyncio.run(
+            self.select_module.async_setup_entry(
+                hass={},
+                entry=entry,
+                async_add_entities=lambda entities: added.extend(entities),
+            )
+        )
+
+        self.assertEqual([entity.source_entity_id for entity in added], ["climate.room_2"])
+
+    def test_autocreate_adds_better_thermostats_that_appear_later(self):
+        first = types.SimpleNamespace(
+            entity_id="climate.room_1",
+            unique_id="room-1",
+            name="Room 1",
+            original_name="Room 1",
+            platform="better_thermostat",
+            domain="climate",
+            disabled_by=None,
+        )
+        entities = {first.entity_id: first}
+
+        class FakeRegistry:
+            @property
+            def entities(self):
+                return entities
+
+            def async_get(self, entity_id):
+                return entities.get(entity_id)
+
+        registry = FakeRegistry()
+        self.select_module.er.async_get = lambda hass: registry
+        entry = types.SimpleNamespace(
+            data={
+                self.const.CONF_AUTOCREATE: True,
+                self.const.CONF_ENTITY_ID_SUFFIX: "preset",
+                self.const.CONF_NAME_SUFFIX: "Presets",
+            },
+            async_on_unload=lambda callback: None,
+        )
+        added = []
+
+        asyncio.run(
+            self.select_module.async_setup_entry(
+                hass={},
+                entry=entry,
+                async_add_entities=lambda batch: added.extend(batch),
+            )
+        )
+        event_module = sys.modules["homeassistant.helpers.event"]
+        _, domain, listener = event_module.added_domain_listeners[-1]
+        self.assertEqual(domain, "climate")
+
+        second = types.SimpleNamespace(
+            entity_id="climate.room_2",
+            unique_id="room-2",
+            name="Room 2",
+            original_name="Room 2",
+            platform="better_thermostat",
+            domain="climate",
+            disabled_by=None,
+        )
+        entities[second.entity_id] = second
+        listener(types.SimpleNamespace(data={"entity_id": second.entity_id}))
+
+        self.assertEqual(
+            [entity.source_entity_id for entity in added],
+            ["climate.room_1", "climate.room_2"],
+        )
+
+    def test_exclusion_text_control_changes_selector_options(self):
+        source_state = types.SimpleNamespace(
+            state="heat",
+            attributes={
+                "preset_mode": "comfort",
+                "preset_modes": ["comfort", "eco", "away", "boost"],
+            },
+        )
+        hass = types.SimpleNamespace(
+            states=types.SimpleNamespace(get=lambda entity_id: source_state),
+            data={},
+        )
+        selector = self.select_module.BetterThermostatPresetSelect(
+            source_entity_id="climate.room",
+            source_unique_id="room-1",
+            source_name="Room",
+            excluded_presets={"boost"},
+            entity_id_suffix="preset",
+            name_suffix="Presets",
+        )
+        selector.hass = hass
+        control = self.text_module.BetterThermostatExcludedPresetsText(
+            source_entity_id="climate.room",
+            source_unique_id="room-1",
+            initial_value="",
+        )
+        control.hass = hass
+        control.async_write_ha_state = lambda: None
+
+        asyncio.run(control.async_set_value("away, ECO"))
+
+        self.assertEqual(selector.options, ["comfort"])
+        self.assertEqual(
+            self.select_module.get_entity_exclusion_store(hass)["climate.room"],
+            ["away", "eco"],
+        )
+
+    def test_selected_thermostat_gets_exclusion_control(self):
+        source = types.SimpleNamespace(
+            entity_id="climate.room",
+            unique_id="room-1",
+            name="Study",
+            original_name="Study",
+            platform="better_thermostat",
+            domain="climate",
+            disabled_by=None,
+        )
+
+        class FakeRegistry:
+            entities = {source.entity_id: source}
+
+            def async_get(self, entity_id):
+                return self.entities.get(entity_id)
+
+        self.text_module.er.async_get = lambda hass: FakeRegistry()
+        entry = types.SimpleNamespace(
+            data={
+                self.const.CONF_AUTOCREATE: False,
+                self.const.CONF_SELECTED_ENTITIES: [source.entity_id],
+                self.const.CONF_ENTITY_EXCLUDED_PRESETS: {
+                    source.entity_id: ["away"]
+                },
+                self.const.CONF_NAME_MODE: "suffix",
+                self.const.CONF_NAME_SUFFIX: "Presets",
+            },
+            async_on_unload=lambda callback: None,
+        )
+        hass = types.SimpleNamespace(data={}, states=types.SimpleNamespace(get=lambda entity_id: None))
+        added = []
+
+        asyncio.run(
+            self.text_module.async_setup_entry(
+                hass=hass,
+                entry=entry,
+                async_add_entities=lambda entities: added.extend(entities),
+            )
+        )
+
+        self.assertEqual(len(added), 1)
+        self.assertEqual(added[0].native_value, "away")
+        self.assertEqual(added[0]._attr_device_info["name"], "Study: Presets")
 
     def test_async_select_option_ignores_invalid_values_and_calls_service_for_valid_ones(self):
         source_state = types.SimpleNamespace(
@@ -494,9 +790,10 @@ class BetterThermostatPresetLogicTests(unittest.TestCase):
         self.assertEqual(result["title"], "Better Thermostat Presets")
         self.assertEqual(result["data"][self.const.CONF_EXCLUDED_PRESETS], ["boost", "none"])
         self.assertEqual(result["data"][self.const.CONF_ENTITY_ID_SUFFIX], "heizpreset")
-        self.assertEqual(result["data"][self.const.CONF_NAME_MODE], "prefix")
+        self.assertEqual(result["data"][self.const.CONF_NAME_MODE], "suffix")
+        self.assertTrue(result["data"][self.const.CONF_AUTOCREATE])
 
-    def test_options_flow_uses_existing_entry_data_and_entity_fields(self):
+    def test_options_flow_uses_existing_entry_data_and_selected_entity_options(self):
         config_entry = types.SimpleNamespace(
             data={
                 self.const.CONF_EXCLUDED_PRESETS: ["boost", "none"],
@@ -519,18 +816,26 @@ class BetterThermostatPresetLogicTests(unittest.TestCase):
 
         flow = self.flow_module.BetterThermostatPresetsOptionsFlow()
         flow._config_entry = config_entry
-        flow.hass = {}
+        flow.hass = types.SimpleNamespace(
+            states=types.SimpleNamespace(get=lambda entity_id: None),
+        )
         result = asyncio.run(flow.async_step_init())
 
         self.assertEqual(result["type"], "form")
         self.assertEqual(result["step_id"], "init")
         schema_fields = result["data_schema"].args[0]
         field_names = [field.key for field in schema_fields]
-        self.assertIn(
-            "Excluded presets for Living Room [climate.living_room]",
-            field_names,
+        self.assertIn(self.const.CONF_AUTOCREATE, field_names)
+        self.assertIn(self.const.CONF_SELECTED_ENTITIES, field_names)
+        entity_field = next(
+            field
+            for field in schema_fields
+            if field.key == self.const.CONF_SELECTED_ENTITIES
         )
-        self.assertNotIn(self.const.CONF_ENTITY_EXCLUDED_PRESETS, field_names)
+        self.assertEqual(
+            schema_fields[entity_field].config.kwargs["options"],
+            [{"label": "Living Room", "value": "climate.living_room"}],
+        )
 
 
 if __name__ == "__main__":

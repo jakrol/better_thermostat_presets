@@ -3,9 +3,13 @@ import re
 
 from homeassistant.components.select import SelectEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers import device_registry as dr, entity_registry as er
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.event import (
+    async_track_state_added_domain,
+)
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
 from .const import (
     DEFAULT_EXCLUDED_PRESETS,
@@ -14,11 +18,14 @@ from .const import (
     DEFAULT_NAME_SUFFIX,
     DEFAULT_NAME_PATTERN,
     DEFAULT_NAME_REPLACEMENT,
-    NAME_MODE_PREFIX,
+    DEFAULT_AUTOCREATE,
     NAME_MODE_REGEX,
+    DOMAIN,
     CONF_EXCLUDED_PRESETS,
     CONF_ENTITY_EXCLUDED_PRESETS,
     CONF_ENTITY_ID_SUFFIX,
+    CONF_AUTOCREATE,
+    CONF_SELECTED_ENTITIES,
     CONF_NAME_SUFFIX,
     CONF_NAME_MODE,
     CONF_NAME_PATTERN,
@@ -74,6 +81,32 @@ def get_source_entities(hass):
         and entity.domain == "climate"
         and entity.disabled_by is None
     ]
+
+
+def get_source_friendly_name(hass, source):
+    """Return the Better Thermostat friendly name without falling back to its ID."""
+
+    state = hass.states.get(source.entity_id) if hasattr(hass, "states") else None
+    if state is not None:
+        if friendly_name := state.attributes.get("friendly_name"):
+            return str(friendly_name).strip()
+
+    for candidate in (source.name, source.original_name):
+        if candidate and candidate != source.entity_id:
+            return str(candidate).strip()
+
+    return "Better Thermostat"
+
+
+def get_entity_exclusion_store(hass):
+    """Return shared per-thermostat exclusions for this integration."""
+
+    if not hasattr(hass, "data"):
+        return {}
+    return hass.data.setdefault(DOMAIN, {}).setdefault(
+        "entity_excluded_presets",
+        {},
+    )
 
 
 class BetterThermostatPresetSelect(SelectEntity):
@@ -143,12 +176,34 @@ class BetterThermostatPresetSelect(SelectEntity):
             return []
 
         presets = state.attributes.get("preset_modes", [])
+        excluded = set(self.excluded_presets)
+        excluded.update(
+            get_entity_exclusion_store(self.hass).get(self.source_entity_id, [])
+        )
 
         return [
             preset
             for preset in presets
-            if preset.lower() not in self.excluded_presets
+            if preset.lower() not in excluded
         ]
+
+    async def async_added_to_hass(self):
+        """Watch the per-entity exclusions text control."""
+
+        await super().async_added_to_hass()
+        self.async_on_remove(
+            async_dispatcher_connect(
+                self.hass,
+                f"{DOMAIN}_{self.source_entity_id}_excluded_presets",
+                self._async_exclusions_changed,
+            )
+        )
+
+    @callback
+    def _async_exclusions_changed(self):
+        """Refresh options after the exclusions text changes."""
+
+        self.async_write_ha_state()
 
     async def async_select_option(self, option):
         """Set a Better Thermostat preset."""
@@ -218,12 +273,12 @@ async def async_setup_entry(
         DEFAULT_NAME_REPLACEMENT,
     )
 
-    sources = get_source_entities(hass)
-    device_registry = dr.async_get(hass)
+    added_entity_ids = set()
+    exclusion_store = get_entity_exclusion_store(hass)
 
-    entities = []
+    def create_select(source):
+        """Build a selector for a source thermostat."""
 
-    for source in sources:
         source_excluded = set(excluded)
         if isinstance(entity_excluded, dict):
             for entity_id, presets in entity_excluded.items():
@@ -240,19 +295,27 @@ async def async_setup_entry(
                             for preset in presets
                             if str(preset).strip()
                         )
+        source_excluded.update(
+            exclusion_store.get(source.entity_id, [])
+        )
 
-        source_device = None
+        source_device_info = {
+            "identifiers": {(DOMAIN, source.unique_id)},
+            "name": build_friendly_name(
+                get_source_friendly_name(hass, source),
+                name_suffix,
+                name_pattern,
+                name_replacement,
+                name_mode,
+            ),
+        }
         if getattr(source, "device_id", None):
-            source_device = device_registry.async_get(source.device_id)
-
-        source_device_info = None
-        if source_device is not None and getattr(source_device, "identifiers", None):
-            source_device_info = {"identifiers": source_device.identifiers}
+            source_device_info["via_device_id"] = source.device_id
 
         entity = BetterThermostatPresetSelect(
             source.entity_id,
             source.unique_id,
-            source.name or source.original_name or source.entity_id,
+            get_source_friendly_name(hass, source),
             source_excluded,
             entity_suffix,
             name_suffix,
@@ -261,7 +324,40 @@ async def async_setup_entry(
             name_mode,
             source_device_info=source_device_info,
         )
+        added_entity_ids.add(source.entity_id)
+        return entity
 
-        entities.append(entity)
+    autocreate = settings.get(CONF_AUTOCREATE, DEFAULT_AUTOCREATE)
+    selected_entity_ids = set(settings.get(CONF_SELECTED_ENTITIES, []))
+    sources = get_source_entities(hass)
+    async_add_entities([
+        create_select(source)
+        for source in sources
+        if autocreate or source.entity_id in selected_entity_ids
+    ])
 
-    async_add_entities(entities)
+    if not autocreate:
+        return
+
+    @callback
+    def async_source_added(event):
+        """Create a selector when a Better Thermostat is added later."""
+
+        entity_id = event.data["entity_id"]
+        if entity_id in added_entity_ids:
+            return
+
+        source = er.async_get(hass).async_get(entity_id)
+        if (
+            source is None
+            or source.platform != "better_thermostat"
+            or source.domain != "climate"
+            or source.disabled_by is not None
+        ):
+            return
+
+        async_add_entities([create_select(source)])
+
+    entry.async_on_unload(
+        async_track_state_added_domain(hass, "climate", async_source_added)
+    )

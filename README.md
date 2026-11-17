@@ -2,6 +2,9 @@
 
 A Home Assistant custom integration that creates preset selector entities for Better Thermostat climate devices.
 
+> [!CAUTION]
+> WORK IN PROGRESS! DO NOT USE!
+
 ## Project attribution
 
 The initial scaffold and first commit were generated with ChatGPT. The subsequent implementation, refinements, and maintenance were done by GitHub Copilot.
@@ -16,14 +19,16 @@ This repository is for active development and is intended for installation as a 
 - Preset selector entities for the thermostat's available modes.
 - Filter out presets such as `boost` or `none`.
 - Configurable entity ID suffix.
-- Fixed naming mode with `prefix` or `regex`.
+- Naming mode with `suffix` or `regex`.
+- Optional automatic creation for current and future Better Thermostat entities.
+- Per-thermostat excluded-preset controls on the generated device page.
 - Translation files for German, English and French.
 
 ## How it works
 
 The integration searches the entity registry for climate entities from `better_thermostat` and creates a `select` entity for each matching thermostat.
 
-The selector name is based on the Better Thermostat `friendly_name`, not the entity ID. The naming mode can be set to `prefix` or `regex`.
+The selector and generated device name are based on the Better Thermostat `friendly_name`, not the entity ID. The naming mode can be set to `suffix` or `regex`.
 
 When a user selects a new preset, the integration calls the standard climate service:
 
@@ -52,14 +57,17 @@ Home Assistant requires this one-time Add Integration step to create a config en
 |---|---|
 | Excluded presets | `boost, none` |
 | Entity ID suffix | `heizpreset` |
-| Name mode | `prefix` |
+| Name mode | `suffix` |
 | Name suffix | `Heizpreset` |
 | Regex pattern | empty |
 | Regex replacement | empty |
+| Autocreate | enabled |
 
-Change these settings from the integration's **Configure** page after adding it. Global excluded presets apply to every selector. The Configure page also provides an individual excluded-presets field for each detected Better Thermostat; those exclusions are added to the global exclusions.
+Change these settings from the integration's **Configure** page after adding it. Global excluded presets apply to every selector. When Autocreate is disabled, use **Existing Better Thermostats** on this page to choose which current thermostats should receive selector entities. When enabled, all current and future Better Thermostats receive entities.
 
-In `prefix` mode, a fixed suffix is added to the Better Thermostat `friendly_name`, for example `Wohnzimmer: Heizpreset`.
+Each thermostat device page includes an **Excluded presets** text control. Enter comma-separated preset names there; they are excluded in addition to the global defaults and restored after a restart.
+
+In `suffix` mode, a fixed suffix is added to the Better Thermostat `friendly_name`, for example `Wohnzimmer: Heizpreset`.
 In `regex` mode, the name is rewritten with a custom regex pattern such as `^(.*)$` and a replacement like `\1: Nachtmodus`.
 
 ## Project structure
