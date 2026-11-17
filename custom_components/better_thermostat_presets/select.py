@@ -3,7 +3,7 @@ import re
 from homeassistant.components.select import SelectEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
@@ -92,6 +92,7 @@ class BetterThermostatPresetSelect(SelectEntity):
         name_pattern="",
         name_replacement="",
         name_mode=DEFAULT_NAME_MODE,
+        source_device_info=None,
     ):
         self.source_entity_id = source_entity_id
         self.excluded_presets = excluded_presets
@@ -99,6 +100,7 @@ class BetterThermostatPresetSelect(SelectEntity):
         self._attr_unique_id = (
             f"{source_unique_id}_{slugify(entity_id_suffix)}"
         )
+        self._attr_device_info = source_device_info
 
         self._attr_name = build_friendly_name(
             source_name,
@@ -216,6 +218,7 @@ async def async_setup_entry(
     )
 
     sources = get_source_entities(hass)
+    device_registry = dr.async_get(hass)
 
     entities = []
 
@@ -237,6 +240,14 @@ async def async_setup_entry(
                             if str(preset).strip()
                         )
 
+        source_device = None
+        if getattr(source, "device_id", None):
+            source_device = device_registry.async_get(source.device_id)
+
+        source_device_info = None
+        if source_device is not None and getattr(source_device, "identifiers", None):
+            source_device_info = {"identifiers": source_device.identifiers}
+
         entity = BetterThermostatPresetSelect(
             source.entity_id,
             source.unique_id,
@@ -247,6 +258,7 @@ async def async_setup_entry(
             name_pattern,
             name_replacement,
             name_mode,
+            source_device_info=source_device_info,
         )
 
         entities.append(entity)

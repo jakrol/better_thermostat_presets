@@ -80,6 +80,7 @@ def install_runtime_stubs():
     helpers = types.ModuleType("homeassistant.helpers")
     helpers.__path__ = []
     entity_registry = types.ModuleType("homeassistant.helpers.entity_registry")
+    device_registry = types.ModuleType("homeassistant.helpers.device_registry")
     entity_platform = types.ModuleType("homeassistant.helpers.entity_platform")
 
     class AddEntitiesCallback:
@@ -91,13 +92,22 @@ def install_runtime_stubs():
         def __init__(self):
             self.entities = {}
 
+    class DeviceRegistry:
+        def __init__(self):
+            self.devices = {}
+
+        def async_get(self, device_id):
+            return self.devices.get(device_id)
+
     entity_registry.async_get = lambda hass: Registry()
+    device_registry.async_get = lambda hass: DeviceRegistry()
 
     homeassistant.components = components
     homeassistant.config_entries = config_entries
     homeassistant.core = core
     homeassistant.helpers = helpers
     helpers.entity_registry = entity_registry
+    helpers.device_registry = device_registry
     helpers.entity_platform = entity_platform
     components.select = select_mod
 
@@ -108,6 +118,7 @@ def install_runtime_stubs():
     sys.modules["homeassistant.core"] = core
     sys.modules["homeassistant.helpers"] = helpers
     sys.modules["homeassistant.helpers.entity_registry"] = entity_registry
+    sys.modules["homeassistant.helpers.device_registry"] = device_registry
     sys.modules["homeassistant.helpers.entity_platform"] = entity_platform
 
     voluptuous = types.ModuleType("voluptuous")
@@ -225,6 +236,20 @@ class BetterThermostatPresetLogicTests(unittest.TestCase):
         self.assertTrue(entity.available)
         self.assertEqual(entity.current_option, "eco")
         self.assertEqual(entity.options, ["eco"])
+
+    def test_select_entity_links_to_better_thermostat_device(self):
+        device_info = {"identifiers": {("better_thermostat", "thermostat-1")}}
+        entity = self.select_module.BetterThermostatPresetSelect(
+            source_entity_id="climate.room",
+            source_unique_id="abc123",
+            source_name="Wohnzimmer",
+            excluded_presets={"boost", "none"},
+            entity_id_suffix="heizpreset",
+            name_suffix="Heizpreset",
+            source_device_info=device_info,
+        )
+
+        self.assertEqual(entity._attr_device_info, device_info)
 
     def test_get_source_entities_only_returns_valid_better_thermostat_climate_entries(self):
         valid = types.SimpleNamespace(
