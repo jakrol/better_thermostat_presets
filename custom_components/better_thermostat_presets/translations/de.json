@@ -7,7 +7,9 @@
         "data": {
           "excluded_presets": "Auszuschließende Presets",
           "entity_id_suffix": "Zusatz für Entity-IDs",
-          "name_suffix": "Zusatz für Anzeigenamen"
+          "name_suffix": "Zusatz für Anzeigenamen",
+          "name_pattern": "Regex für Anzeigenamen",
+          "name_replacement": "Ersetzung für Anzeigenamen"
         }
       }
     },
@@ -23,7 +25,9 @@
         "data": {
           "excluded_presets": "Auszuschließende Presets",
           "entity_id_suffix": "Zusatz für Entity-IDs",
-          "name_suffix": "Zusatz für Anzeigenamen"
+          "name_suffix": "Zusatz für Anzeigenamen",
+          "name_pattern": "Regex für Anzeigenamen",
+          "name_replacement": "Ersetzung für Anzeigenamen"
         }
       }
     }

@@ -10,9 +10,13 @@ from .const import (
     DEFAULT_EXCLUDED_PRESETS,
     DEFAULT_ENTITY_ID_SUFFIX,
     DEFAULT_NAME_SUFFIX,
+    DEFAULT_NAME_PATTERN,
+    DEFAULT_NAME_REPLACEMENT,
     CONF_EXCLUDED_PRESETS,
     CONF_ENTITY_ID_SUFFIX,
     CONF_NAME_SUFFIX,
+    CONF_NAME_PATTERN,
+    CONF_NAME_REPLACEMENT,
 )
 
 
@@ -22,6 +26,33 @@ def slugify(value: str) -> str:
     value = value.lower()
     value = re.sub(r"[^a-z0-9_]+", "_", value)
     return value.strip("_")
+
+
+def build_friendly_name(
+    source_name,
+    name_suffix,
+    name_pattern="",
+    name_replacement="",
+):
+    """Build the selector display name from the thermostat's friendly name."""
+
+    source_name = (source_name or "").strip()
+    if not source_name:
+        return name_suffix.strip()
+
+    if name_pattern:
+        try:
+            replacement = name_replacement or r"\g<0>"
+            result = re.sub(name_pattern, replacement, source_name)
+            if result.strip():
+                return result.strip()
+        except re.error:
+            pass
+
+    if name_suffix:
+        return f"{source_name}: {name_suffix}"
+
+    return source_name
 
 
 def get_source_entities(hass):
@@ -52,6 +83,8 @@ class BetterThermostatPresetSelect(SelectEntity):
         excluded_presets,
         entity_id_suffix,
         name_suffix,
+        name_pattern="",
+        name_replacement="",
     ):
         self.source_entity_id = source_entity_id
         self.excluded_presets = excluded_presets
@@ -60,7 +93,12 @@ class BetterThermostatPresetSelect(SelectEntity):
             f"{source_unique_id}_{slugify(entity_id_suffix)}"
         )
 
-        self._attr_name = f"{source_name}: {name_suffix}"
+        self._attr_name = build_friendly_name(
+            source_name,
+            name_suffix,
+            name_pattern,
+            name_replacement,
+        )
 
     @property
     def available(self):
@@ -145,6 +183,16 @@ async def async_setup_entry(
         DEFAULT_NAME_SUFFIX,
     )
 
+    name_pattern = entry.data.get(
+        CONF_NAME_PATTERN,
+        DEFAULT_NAME_PATTERN,
+    )
+
+    name_replacement = entry.data.get(
+        CONF_NAME_REPLACEMENT,
+        DEFAULT_NAME_REPLACEMENT,
+    )
+
     sources = get_source_entities(hass)
 
     entities = []
@@ -157,6 +205,8 @@ async def async_setup_entry(
             excluded,
             entity_suffix,
             name_suffix,
+            name_pattern,
+            name_replacement,
         )
 
         entities.append(entity)

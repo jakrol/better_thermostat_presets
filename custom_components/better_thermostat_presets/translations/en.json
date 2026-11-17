@@ -7,7 +7,9 @@
         "data": {
           "excluded_presets": "Excluded presets",
           "entity_id_suffix": "Entity ID suffix",
-          "name_suffix": "Display name suffix"
+          "name_suffix": "Display name suffix",
+          "name_pattern": "Friendly name regex",
+          "name_replacement": "Friendly name replacement"
         }
       }
     },
@@ -23,7 +25,9 @@
         "data": {
           "excluded_presets": "Excluded presets",
           "entity_id_suffix": "Entity ID suffix",
-          "name_suffix": "Display name suffix"
+          "name_suffix": "Display name suffix",
+          "name_pattern": "Friendly name regex",
+          "name_replacement": "Friendly name replacement"
         }
       }
     }

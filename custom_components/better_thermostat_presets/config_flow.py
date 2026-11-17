@@ -8,9 +8,13 @@ from .const import (
     DEFAULT_EXCLUDED_PRESETS,
     DEFAULT_ENTITY_ID_SUFFIX,
     DEFAULT_NAME_SUFFIX,
+    DEFAULT_NAME_PATTERN,
+    DEFAULT_NAME_REPLACEMENT,
     CONF_EXCLUDED_PRESETS,
     CONF_ENTITY_ID_SUFFIX,
     CONF_NAME_SUFFIX,
+    CONF_NAME_PATTERN,
+    CONF_NAME_REPLACEMENT,
 )
 
 
@@ -32,6 +36,17 @@ def get_schema(defaults):
             CONF_NAME_SUFFIX,
             default=defaults[CONF_NAME_SUFFIX],
         ): str,
+        vol.Optional(
+            CONF_NAME_PATTERN,
+            default=defaults.get(CONF_NAME_PATTERN, DEFAULT_NAME_PATTERN),
+        ): str,
+        vol.Optional(
+            CONF_NAME_REPLACEMENT,
+            default=defaults.get(
+                CONF_NAME_REPLACEMENT,
+                DEFAULT_NAME_REPLACEMENT,
+            ),
+        ): str,
     })
 
 
@@ -52,6 +67,12 @@ def parse_options(user_input):
         CONF_NAME_SUFFIX: user_input[
             CONF_NAME_SUFFIX
         ].strip(),
+        CONF_NAME_PATTERN: str(
+            user_input.get(CONF_NAME_PATTERN, DEFAULT_NAME_PATTERN)
+        ).strip(),
+        CONF_NAME_REPLACEMENT: str(
+            user_input.get(CONF_NAME_REPLACEMENT, DEFAULT_NAME_REPLACEMENT)
+        ).strip(),
     }
 
 
@@ -73,6 +94,8 @@ class BetterThermostatPresetsConfigFlow(
             CONF_EXCLUDED_PRESETS: DEFAULT_EXCLUDED_PRESETS,
             CONF_ENTITY_ID_SUFFIX: DEFAULT_ENTITY_ID_SUFFIX,
             CONF_NAME_SUFFIX: DEFAULT_NAME_SUFFIX,
+            CONF_NAME_PATTERN: DEFAULT_NAME_PATTERN,
+            CONF_NAME_REPLACEMENT: DEFAULT_NAME_REPLACEMENT,
         }
 
         if user_input is not None:
@@ -117,6 +140,14 @@ class BetterThermostatPresetsOptionsFlow(
             CONF_NAME_SUFFIX: self.config_entry.data.get(
                 CONF_NAME_SUFFIX,
                 DEFAULT_NAME_SUFFIX,
+            ),
+            CONF_NAME_PATTERN: self.config_entry.data.get(
+                CONF_NAME_PATTERN,
+                DEFAULT_NAME_PATTERN,
+            ),
+            CONF_NAME_REPLACEMENT: self.config_entry.data.get(
+                CONF_NAME_REPLACEMENT,
+                DEFAULT_NAME_REPLACEMENT,
             ),
         }
 

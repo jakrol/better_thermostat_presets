@@ -164,11 +164,29 @@ class BetterThermostatPresetLogicTests(unittest.TestCase):
             self.const.CONF_EXCLUDED_PRESETS: " boost, none, eco ",
             self.const.CONF_ENTITY_ID_SUFFIX: "  Heizpreset  ",
             self.const.CONF_NAME_SUFFIX: "  Heizpreset  ",
+            self.const.CONF_NAME_PATTERN: "^(.+)$",
+            self.const.CONF_NAME_REPLACEMENT: "\\1: Heizpreset",
         })
 
         self.assertEqual(parsed["excluded_presets"], ["boost", "none", "eco"])
         self.assertEqual(parsed["entity_id_suffix"], "Heizpreset")
         self.assertEqual(parsed["name_suffix"], "Heizpreset")
+        self.assertEqual(parsed["name_pattern"], "^(.+)$")
+        self.assertEqual(parsed["name_replacement"], "\\1: Heizpreset")
+
+    def test_select_entity_uses_regex_pattern_for_friendly_name(self):
+        entity = self.select_module.BetterThermostatPresetSelect(
+            source_entity_id="climate.room",
+            source_unique_id="abc123",
+            source_name="Wohnzimmer",
+            excluded_presets={"boost", "none"},
+            entity_id_suffix="heizpreset",
+            name_suffix="Heizpreset",
+            name_pattern=r"^(.*)$",
+            name_replacement=r"\1: Nachtmodus",
+        )
+
+        self.assertEqual(entity._attr_name, "Wohnzimmer: Nachtmodus")
 
     def test_select_entity_exposes_current_and_available_presets(self):
         source_state = types.SimpleNamespace(

@@ -54,6 +54,10 @@ The integration supports the following values:
 | Excluded presets | `boost, none` |
 | Entity ID suffix | `heizpreset` |
 | Display name suffix | `Heizpreset` |
+| Friendly name regex | empty |
+| Friendly name replacement | empty |
+
+The friendly name is built from the original Better Thermostat entity name. If no regex is configured, the display name becomes `Wohnzimmer: Heizpreset`. If a regex is configured, it is applied to the friendly name instead, which allows custom patterns such as `^(.*)$` with a replacement like `\1: Nachtmodus`.
 
 The excluded presets are normalized to lowercase and filtered from the select options.
 

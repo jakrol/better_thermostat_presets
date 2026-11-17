@@ -7,7 +7,9 @@
         "data": {
           "excluded_presets": "Préréglages exclus",
           "entity_id_suffix": "Suffixe de l'identifiant d'entité",
-          "name_suffix": "Suffixe du nom affiché"
+          "name_suffix": "Suffixe du nom affiché",
+          "name_pattern": "Regex du nom affiché",
+          "name_replacement": "Remplacement du nom affiché"
         }
       }
     },
@@ -23,7 +25,9 @@
         "data": {
           "excluded_presets": "Préréglages exclus",
           "entity_id_suffix": "Suffixe de l'identifiant d'entité",
-          "name_suffix": "Suffixe du nom affiché"
+          "name_suffix": "Suffixe du nom affiché",
+          "name_pattern": "Regex du nom affiché",
+          "name_replacement": "Remplacement du nom affiché"
         }
       }
     }
