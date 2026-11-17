@@ -52,8 +52,12 @@ def install_runtime_stubs():
             return {"type": "create_entry", **kwargs}
 
     class OptionsFlow:
+        @property
+        def config_entry(self):
+            return self._config_entry
+
         def __init__(self, *args, **kwargs):
-            self.config_entry = kwargs.get("config_entry")
+            self._config_entry = kwargs.get("config_entry")
 
         def async_show_form(self, **kwargs):
             return {"type": "form", **kwargs}
@@ -331,6 +335,7 @@ class BetterThermostatPresetLogicTests(unittest.TestCase):
         )
 
         flow = self.flow_module.BetterThermostatPresetsOptionsFlow(config_entry)
+        self.assertIs(flow.config_entry, config_entry)
         result = flow.async_show_form(step_id="init", data_schema=None)
 
         self.assertEqual(result["type"], "form")
