@@ -6,6 +6,10 @@ A Home Assistant custom integration that creates preset selectors for Better The
 
 The initial repository scaffold and first commit were generated with ChatGPT. Subsequent implementation work, refinements and maintenance were performed by GitHub Copilot.
 
+## Status
+
+This project is currently in active development and is not yet published as a formal release. The repository is intended for installation as a custom Home Assistant integration and may evolve as new features and compatibility fixes are added.
+
 ## Features
 
 - Automatic discovery of Better Thermostat climate entities.
