@@ -28,17 +28,22 @@ This keeps the preset selector in sync with the underlying Better Thermostat ent
 
 ## Installation
 
-Copy the directory:
+### Install via HACS / Home Assistant Marketplace
 
-`custom_components/better_thermostat_presets`
+1. Open Home Assistant.
+2. Go to HACS.
+3. Open the HACS menu and choose the option to add a custom repository.
+4. Add this repository:
 
-into your Home Assistant configuration directory and restart Home Assistant.
+   `https://github.com/jakrol/better_thermostat_presets`
 
-Then add the integration via:
+5. Select the repository type as a custom integration.
+6. Install the integration from HACS.
+7. Restart Home Assistant.
+8. Open Settings > Devices & Services > Add Integration.
+9. Search for `Better Thermostat Presets` and add it.
 
-Settings > Devices & Services > Add Integration
-
-Search for `Better Thermostat Presets`.
+This is the recommended installation method for Home Assistant users and follows the standard custom integration flow used in the marketplace ecosystem.
 
 ## Configuration
 
